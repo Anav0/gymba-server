@@ -14,7 +14,7 @@ const MongoStore = require("connect-mongo")(session);
 import uuidv4 from "uuid/v4";
 import * as sendgrid from "./service/sendgrid_service";
 require("dotenv").config();
-
+//TODO: Add mongo transactions
 mongoose.connect(`${process.env.MONGO_SERVER_URL}/gymba`,
   { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true },
   err => {
@@ -43,10 +43,6 @@ app.use(multer().array());
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.get("/", isLoggedIn, function (req, res) {
-  return res.status(200).send(req.session);
-});
-
 app.post('/login', function (req, res, next) {
   passport.authenticate('local', function (err, user, info) {
     if (err) { return next(err); }
@@ -67,7 +63,7 @@ app.get("/logout", isLoggedIn, function (req, res) {
   res.status(200).send("Logout successfull");
 });
 
-app.post("/register", function (req, res) {
+app.post("/user", function (req, res) {
   var user = new UserModel(req.body);
   user.creationDate = Date.now();
   user.expireAt = moment(Date.now()).add(7, "days");
@@ -175,8 +171,8 @@ app.post("/invite", isLoggedIn, function (req, res) {
     return res.status(400).send({ message: "You cannot befreind yourself" });
 
   //Check if targetId is not already our friend
-  for (const friend of req.user.friends) {
-    if (friend == targetId)
+  for (const friendId of req.user.friends) {
+    if (friendId == targetId)
       return res.status(400).send({ message: "You are already friends" });
   }
 
@@ -191,7 +187,7 @@ app.post("/invite", isLoggedIn, function (req, res) {
       if (results.length > 0)
         return res.status(400).send({ message: "Invitation was already send" });
 
-      UserModel.findOne({ _id: targetId }, (err, user) => {
+      UserModel.findOne({ _id: targetId }, (err, invitedUser) => {
         if (err) return res.status(400).send(err);
 
         var invitation = new InvitationModel({
@@ -204,9 +200,9 @@ app.post("/invite", isLoggedIn, function (req, res) {
           if (err) return res.status(400).send(err);
 
           //TODO: if not cast to string it will not compare well at accept invite level
-          user.invitations.push(invite._id.toString());
+          invitedUser.invitations.push(invite._id.toString());
 
-          user.save((err, user) => {
+          invitedUser.save((err, user) => {
             if (err) return res.status(400).send(err);
             return res.status(200).send(invite);
           });
@@ -240,10 +236,10 @@ app.post("/invite/accept/:id", isLoggedIn, function (req, res) {
     if (req.user._id != invitation.targetId)
       return res.status(400).send({
         message:
-          "You are not target of tis invitation soo you cannot accept it. Nice try doe"
+          "You are not target of this invitation so you cannot accept it. Nice try doe"
       });
 
-    //Add sender to friends list
+    //Add invitation sender to user's friends list
     req.user.friends.push(invitation.senderId);
 
     console.log(req.user);
@@ -258,14 +254,14 @@ app.post("/invite/accept/:id", isLoggedIn, function (req, res) {
       if (err) return res.status(400).send(err);
 
       //find sender and add target to his friends list
-      UserModel.findOne({ _id: invitation.senderId }, (err, user) => {
+      UserModel.findOne({ _id: invitation.senderId }, (err, invitationSender) => {
         if (err) return res.status(400).send(err);
 
         //add to friend list
-        user.friends.push(invitation.targetId);
+        invitationSender.friends.push(invitation.targetId);
 
         //save changes
-        user.save(err => {
+        invitationSender.save(err => {
           if (err) return res.status(400).send(err);
 
           //Remove invitation
@@ -275,6 +271,36 @@ app.post("/invite/accept/:id", isLoggedIn, function (req, res) {
             return res.status(200).send({ message: "Invitation accepted" });
           });
         });
+      });
+    });
+  });
+});
+
+app.post("/invite/reject/:id", isLoggedIn, function (req, res) {
+  InvitationModel.findOne({ _id: req.params.id }, (err, invitation) => {
+    if (err) return res.status(400).send(err);
+
+    //Check if user is target of this invitation
+    if (req.user._id != invitation.targetId)
+      return res.status(400).send({
+        message:
+          "You are not target of this invitation so you cannot reject it. Nice try doe"
+      });
+
+    //Remove invitation from recived invitations list
+    req.user.invitations = req.user.invitations.filter(function (item) {
+      return item != invitation._id;
+    });
+
+    //Save changes
+    req.user.save(err => {
+      if (err) return res.status(400).send(err);
+
+      //Remove invitation
+      invitation.remove(err => {
+        if (err) return res.status(400).send(err);
+
+        return res.status(200).send({ message: "Invitation rejected successfully" });
       });
     });
   });
