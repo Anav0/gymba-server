@@ -24,7 +24,13 @@ const User = new Schema({
   fullname: {
     type: String,
     required: true,
-    maxlength: [500, "Name max length is 250"],
+    maxlength: [250, "Name max length is 250"],
+    trim: true
+  },
+  desc: {
+    type: String,
+    required: false,
+    maxlength: [500, "Name max length is 500"],
     trim: true
   },
   avatarUrl: {
@@ -72,7 +78,7 @@ User.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
  so you must use a save() if you want to update user passwords */
 
 //WARNING! this function cannot have arrow syntax becouse "this" will be undefined
-User.pre("save", function(next) {
+User.pre("save", function (next) {
   var user = this;
 
   //only hash the password if it has been modified (or is new)
@@ -97,8 +103,8 @@ User.pre("save", function(next) {
   });
 });
 
-User.methods.comparePassword = function(candidatePassword, callback) {
-  bcrypt.compare(candidatePassword, this.password, function(err, isMatch) {
+User.methods.comparePassword = function (candidatePassword, callback) {
+  bcrypt.compare(candidatePassword, this.password, function (err, isMatch) {
     if (err) return callback(err);
     callback(null, isMatch);
   });

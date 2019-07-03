@@ -12,17 +12,16 @@ import "./local_strategy";
 import moment from "moment";
 const MongoStore = require("connect-mongo")(session);
 import uuidv4 from "uuid/v4";
-import * as sendgrid from "./sendgrid_service";
+import * as sendgrid from "./service/sendgrid_service";
 require("dotenv").config();
 
-app.use(cors());
-mongoose.connect(
-  process.env.MONGO_URL + "/local",
+mongoose.connect(`${process.env.MONGO_SERVER_URL}/gymba`,
   { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true },
   err => {
     if (err) console.error(err);
   }
 );
+app.use(cors());
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -44,29 +43,31 @@ app.use(multer().array());
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.get("/", isLoggedIn, function(req, res) {
+app.get("/", isLoggedIn, function (req, res) {
   return res.status(200).send(req.session);
 });
 
-app.post(
-  "/login",
-  passport.authenticate("local", {
-    successRedirect: "/",
-    failureRedirect: "/login",
-    failureFlash: false
-  })
-);
-
-app.get("/login", function(req, res) {
-  res.status(200).send("Login page");
+app.post('/login', function (req, res, next) {
+  passport.authenticate('local', function (err, user, info) {
+    if (err) { return next(err); }
+    if (!user) { return res.status(400).send(info); }
+    req.logIn(user, function (err) {
+      if (err) { return next(err); }
+      let responce = {
+        user: user,
+        session: req.session
+      }
+      return res.status(200).send(responce)
+    });
+  })(req, res, next);
 });
 
-app.get("/logout", isLoggedIn, function(req, res) {
+app.get("/logout", isLoggedIn, function (req, res) {
   req.logOut();
   res.status(200).send("Logout successfull");
 });
 
-app.post("/register", function(req, res) {
+app.post("/register", function (req, res) {
   var user = new UserModel(req.body);
   user.creationDate = Date.now();
   user.expireAt = moment(Date.now()).add(7, "days");
@@ -81,14 +82,14 @@ app.post("/register", function(req, res) {
     var token = uuidv4();
 
     //Create verification link containing user id and token
-    const verificationLink = `${process.env.URL}/verify/${user._id}/${token}`;
+    const verificationLink = `${process.env.SERVER_URL}/verify/${user._id}/${token}`;
     console.log(`\n ${verificationLink} \n`);
 
     //Send verification email
     sendgrid.sendMessage(
       user.email,
       "papilionem@noreply.com",
-      "Chat email verification",
+      "Chat account verification",
       `This is your email verification link: ${verificationLink} it will expire in 7 days`,
       `<a href="${verificationLink}">link</a>`,
       (err, results) => {
@@ -100,14 +101,14 @@ app.post("/register", function(req, res) {
         user.save((err, user) => {
           if (err) return res.status(400).send(err);
 
-          return res.status(201).redirect("/login");
+          return res.status(201).send({ message: "User registered successfully" });
         });
       }
     );
   });
 });
 
-app.patch("/user", isLoggedIn, function(req, res) {
+app.patch("/user", isLoggedIn, function (req, res) {
   if (req.isUnauthenticated())
     return res.status(403).send({
       message: "You are not authorized"
@@ -132,7 +133,7 @@ app.patch("/user", isLoggedIn, function(req, res) {
   });
 });
 
-app.get("/verify/:id/:token", function(req, res) {
+app.get("/verify/:id/:token", function (req, res) {
   var token = req.params.token;
   var userId = req.params.id;
 
@@ -165,7 +166,7 @@ app.get("/verify/:id/:token", function(req, res) {
   });
 });
 
-app.post("/invite", isLoggedIn, function(req, res) {
+app.post("/invite", isLoggedIn, function (req, res) {
   var userId = req.user._id;
   var targetId = req.body.targetId;
 
@@ -215,7 +216,7 @@ app.post("/invite", isLoggedIn, function(req, res) {
   );
 });
 
-app.get("/invite", isLoggedIn, function(req, res) {
+app.get("/invite", isLoggedIn, function (req, res) {
   InvitationModel.find((err, results) => {
     if (err) return res.status(400).send(err);
 
@@ -223,7 +224,7 @@ app.get("/invite", isLoggedIn, function(req, res) {
   });
 });
 
-app.get("/invite/:id", isLoggedIn, function(req, res) {
+app.get("/invite/:id", isLoggedIn, function (req, res) {
   InvitationModel.findOne({ _id: req.params.id }, (err, results) => {
     if (err) return res.status(400).send(err);
 
@@ -231,7 +232,7 @@ app.get("/invite/:id", isLoggedIn, function(req, res) {
   });
 });
 
-app.post("/invite/accept/:id", isLoggedIn, function(req, res) {
+app.post("/invite/accept/:id", isLoggedIn, function (req, res) {
   InvitationModel.findOne({ _id: req.params.id }, (err, invitation) => {
     if (err) return res.status(400).send(err);
 
@@ -247,7 +248,7 @@ app.post("/invite/accept/:id", isLoggedIn, function(req, res) {
 
     console.log(req.user);
     //Remove invitation from recived invitations list
-    req.user.invitations = req.user.invitations.filter(function(item) {
+    req.user.invitations = req.user.invitations.filter(function (item) {
       return item != invitation._id;
     });
     console.log(req.user);
@@ -279,10 +280,10 @@ app.post("/invite/accept/:id", isLoggedIn, function(req, res) {
   });
 });
 
-server.listen(8000);
-
 function isLoggedIn(req, res, next) {
   if (req.user) return next();
 
-  return res.redirect("/login");
+  return res.status(403).send({ message: "You are not authenticated" });
 }
+
+server.listen(8000);
