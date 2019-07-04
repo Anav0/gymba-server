@@ -6,7 +6,7 @@ import mongoose from "mongoose";
 import passport from "passport";
 import session from "express-session";
 import bodyParser from "body-parser";
-import { UserModel } from "./schemas/user";
+import { UserModel, getUserModelPublicInfo } from "./schemas/user";
 import { InvitationModel } from "./schemas/invitation";
 import "./local_strategy";
 import moment from "moment";
@@ -61,6 +61,14 @@ app.post('/login', function (req, res, next) {
 app.get("/logout", isLoggedIn, function (req, res) {
   req.logOut();
   res.status(200).send("Logout successfull");
+});
+
+app.get("/user", function (req, res) {
+  if (req.user)
+    return res.status(400).send(req.user)
+
+
+  return res.status(400).send({ message: "You are not sign in" })
 });
 
 app.post("/user", function (req, res) {
@@ -127,6 +135,22 @@ app.patch("/user", isLoggedIn, function (req, res) {
       return res.status(200).send(user);
     });
   });
+});
+
+app.get("/users", function (req, res) {
+  UserModel.find({}, getUserModelPublicInfo(), (err, users) => {
+    if (err) return res.status(400).send(err)
+
+    return res.status(200).send(users);
+  })
+});
+
+app.get("/users/:id", function (req, res) {
+  UserModel.findOne({ _id: req.params.id }, getUserModelPublicInfo(), (err, user) => {
+    if (err) return res.status(400).send(err)
+
+    return res.status(200).send(user);
+  })
 });
 
 app.get("/verify/:id/:token", function (req, res) {
@@ -228,7 +252,7 @@ app.get("/invite/:id", isLoggedIn, function (req, res) {
   });
 });
 
-app.post("/invite/accept/:id", isLoggedIn, function (req, res) {
+app.post("/invite/accept", isLoggedIn, function (req, res) {
   InvitationModel.findOne({ _id: req.params.id }, (err, invitation) => {
     if (err) return res.status(400).send(err);
 
@@ -276,7 +300,7 @@ app.post("/invite/accept/:id", isLoggedIn, function (req, res) {
   });
 });
 
-app.post("/invite/reject/:id", isLoggedIn, function (req, res) {
+app.post("/invite/reject", isLoggedIn, function (req, res) {
   InvitationModel.findOne({ _id: req.params.id }, (err, invitation) => {
     if (err) return res.status(400).send(err);
 

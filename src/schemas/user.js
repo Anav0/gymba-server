@@ -1,24 +1,14 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 
-var Schema = mongoose.Schema;
+const Schema = mongoose.Schema;
 
-const User = new Schema({
-  expireAt: {
-    type: Date
-  },
+const publicInfo = {
   username: {
     type: String,
     required: true,
     maxlength: 250,
     index: { unique: true },
-    trim: true
-  },
-  password: {
-    type: String,
-    required: true,
-    minlength: [6, "Password needs to be at least 6 characters long"],
-    maxlength: [250, "Password max length is 250"],
     trim: true
   },
   fullname: {
@@ -33,8 +23,26 @@ const User = new Schema({
     maxlength: [500, "Name max length is 500"],
     trim: true
   },
+  creationDate: {
+    type: Date,
+    required: true
+  },
   avatarUrl: {
     type: String
+  },
+
+}
+
+const User = new Schema({
+  expireAt: {
+    type: Date
+  },
+  password: {
+    type: String,
+    required: true,
+    minlength: [6, "Password needs to be at least 6 characters long"],
+    maxlength: [250, "Password max length is 250"],
+    trim: true
   },
   //TODO: make this field unique only after testing
   email: {
@@ -57,11 +65,6 @@ const User = new Schema({
     type: String
   },
 
-  creationDate: {
-    type: Date,
-    required: true
-  },
-
   friends: Array,
   conversations: Array,
   invitations: Array,
@@ -69,6 +72,8 @@ const User = new Schema({
   mutedBy: Array,
   sendMessages: Array
 });
+
+User.add(publicInfo)
 
 //Delete user after expireAt date
 //It's only if user didn't verify his or her email
@@ -109,5 +114,9 @@ User.methods.comparePassword = function (candidatePassword, callback) {
     callback(null, isMatch);
   });
 };
+
+export const getUserModelPublicInfo = () => {
+  return Object.getOwnPropertyNames(publicInfo)
+}
 
 export const UserModel = mongoose.model("User", User);
