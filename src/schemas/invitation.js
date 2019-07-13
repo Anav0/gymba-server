@@ -7,12 +7,14 @@ const Invitation = new Schema({
     type: Date,
     required: true
   },
-  senderId: {
-    type: String,
+  sender: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
     required: true
   },
-  targetId: {
-    type: String,
+  target: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
     required: true
   }
 });

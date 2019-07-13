@@ -30,7 +30,7 @@ const publicInfo = {
   avatarUrl: {
     type: String
   },
-
+  friends: [{ type: Schema.Types.ObjectId, ref: 'User' }],
 }
 
 const User = new Schema({
@@ -64,13 +64,8 @@ const User = new Schema({
   emailVerificationToken: {
     type: String
   },
-
-  friends: Array,
-  conversations: Array,
-  invitations: Array,
-  bannedBy: Array,
-  mutedBy: Array,
-  sendMessages: Array
+  conversations: [{ type: Schema.Types.ObjectId, ref: 'Conversation' }],
+  invitations: [{ type: Schema.Types.ObjectId, ref: 'Invitation' }],
 });
 
 User.add(publicInfo)

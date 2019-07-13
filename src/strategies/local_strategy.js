@@ -1,13 +1,13 @@
 import Strategy from "passport-local";
 import passport from "passport";
 
-import { UserModel } from "./schemas/user";
+import { UserModel } from "../schemas/user";
 
 passport.use(
-  new Strategy(function(username, password, done) {
+  new Strategy(function (username, password, done) {
     username = username.trim();
     password = password.trim();
-    UserModel.findOne({ username: username }, function(err, user) {
+    UserModel.findOne({ username: username }, function (err, user) {
       if (err) {
         return done(err);
       }
@@ -31,12 +31,12 @@ passport.use(
   })
 );
 
-passport.serializeUser(function(user, done) {
+passport.serializeUser(function (user, done) {
   done(null, user.id);
 });
 
-passport.deserializeUser(function(id, done) {
-  UserModel.findById(id, function(err, user) {
+passport.deserializeUser(function (id, done) {
+  UserModel.findById(id, function (err, user) {
     done(err, user);
   });
 });
