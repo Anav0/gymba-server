@@ -64,45 +64,37 @@ export const initializeApi = (app, mongoose) => {
         return res.status(400).send({ message: "You are not sign in" })
     });
 
-    app.post("/user", function (req, res) {
-        var user = new UserModel(req.body);
-        user.creationDate = Date.now();
-        user.expireAt = moment(Date.now()).add(7, "days");
+    app.post("/user", async (req, res) => {
+        const session = await mongoose.startSession();
+        const opt = { session };
+        try {
+            session.startTransaction();
 
-        //Save user here to get request data validation
-        user.save(err => {
-            console.log(err);
-
-            if (err) return res.status(400).send(err);
+            let user = new UserModel(req.body);
 
             //Generate random guid
-            var token = uuidv4();
+            const token = uuidv4();
 
-            //Create verification link containing user id and token
-            const verificationLink = `${process.env.SERVER_URL}/verify/${user._id}/${token}`;
-            console.log(`\n ${verificationLink} \n`);
+            user.emailVerificationToken = token;
+            user.emailVerificationSendDate = Date.now();
+            user.isEmailVerified = false;
+            user.creationDate = Date.now();
+            user.expireAt = moment(Date.now()).add(7, "days");
 
-            //Send verification email
-            sendgrid.sendMessage(
-                user.email,
-                "papilionem@noreply.com",
-                "Chat account verification",
-                `This is your email verification link: ${verificationLink} it will expire in 7 days`,
-                `<a href="${verificationLink}">link</a>`,
-                (err, results) => {
-                    if (err) return res.status(400).send(err);
+            //Save user here to get request data validation
+            user = await user.save(opt);
 
-                    user.emailVerificationToken = token;
-                    user.emailVerificationSendDate = Date.now();
-                    user.isEmailVerified = false;
-                    user.save((err, user) => {
-                        if (err) return res.status(400).send(err);
+            await sendEmailVerification(user._id, user.email, token)
 
-                        return res.status(201).send({ message: "User registered successfully" });
-                    });
-                }
-            );
-        });
+            await session.commitTransaction();
+            return res.status(201).send({ message: "User registered successfully" });
+
+        } catch (err) {
+            console.error(err);
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).send(err);
+        }
     });
 
     app.patch("/user", isLoggedIn, function (req, res) {
@@ -169,12 +161,12 @@ export const initializeApi = (app, mongoose) => {
             user.save(err => {
                 if (err) return res.status(500).send(err);
 
-                return res.status(200).redirect("/login");
+                return res.status(200).send("Email verified");
             });
         });
     });
 
-    app.post("/invite", isLoggedIn, function (req, res) {
+    app.post("/user/invite", isLoggedIn, function (req, res) {
         var userId = req.user._id;
         var targetId = new mongoose.Types.ObjectId(req.body.targetId);
 
@@ -223,7 +215,7 @@ export const initializeApi = (app, mongoose) => {
         );
     });
 
-    app.get("/invite", isLoggedIn, function (req, res) {
+    app.get("/user/invite", isLoggedIn, function (req, res) {
         InvitationModel.find().populate(req.body.populate).exec((err, results) => {
             if (err) return res.status(400).send(err);
 
@@ -231,14 +223,14 @@ export const initializeApi = (app, mongoose) => {
         });
     });
 
-    app.get("/invite/:id", isLoggedIn, function (req, res) {
+    app.get("/user/invite/:id", isLoggedIn, function (req, res) {
         InvitationModel.findOne({ _id: req.params.id }).populate(req.body.populate).exec((err, result) => {
             if (err) return res.status(400).send(err);
             return res.status(200).send(result);
         });
     });
 
-    app.post("/invite/accept", isLoggedIn, function (req, res) {
+    app.post("/user/invite/accept", isLoggedIn, function (req, res) {
         InvitationModel.findOne({ _id: req.body.id }, (err, invitation) => {
             if (err) return res.status(400).send(err);
 
@@ -299,7 +291,7 @@ export const initializeApi = (app, mongoose) => {
     });
 
 
-    app.post("/invite/reject", isLoggedIn, function (req, res) {
+    app.post("/user/invite/reject", isLoggedIn, function (req, res) {
         InvitationModel.findOne({ _id: req.params.id }, (err, invitation) => {
             if (err) return res.status(400).send(err);
 
@@ -335,4 +327,22 @@ export const initializeApi = (app, mongoose) => {
 function isLoggedIn(req, res, next) {
     if (req.user) return next();
     return res.status(403).send({ message: "You are not authenticated" });
+}
+function sendEmailVerification(userId, email, token) {
+    //Create verification link containing user id and token
+    const verificationLink = `${process.env.SERVER_URL}/verify/${userId}/${token}`;
+    console.log(`\n ${verificationLink} \n`);
+
+    const htmlLink = `<a href="${verificationLink}">link</a>`;
+    const messageOne = 'This is your email verification link:';
+    const messageTwo = 'it will expire in 7 days';
+
+    //Send verification email
+    return sendgrid.sendMessage(
+        email,
+        "igor_motyka@mail.com",
+        "Chat account verification",
+        `${messageOne} ${verificationLink} ${messageTwo}`,
+        `${messageOne} ${htmlLink} ${messageTwo}`)
+
 }
