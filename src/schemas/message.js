@@ -7,9 +7,11 @@ const Message = new Schema({
         type: Date,
         required: true
     },
+    conversationId: {
+        type: { type: Schema.Types.ObjectId, ref: 'Conversation' },
+    },
     sender: {
-        type: { type: Schema.Types.ObjectId, ref: 'User' },
-        required: true
+        type: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     },
     status: {
         type: String,

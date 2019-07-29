@@ -2,10 +2,14 @@ export const initializeSocket = (http) => {
     console.log("Initializing sockets...")
     var io = require('socket.io')(http);
 
-    io.on('connection', function (socket) {
+    io.on('connection', (socket) => {
         console.log('a user connected');
 
-        socket.on('private message', function (message) {
+        socket.on('join', (room) => {
+            socket.join(room);
+        });
+
+        socket.on('private message', (message) => {
             console.log(message);
         });
 

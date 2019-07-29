@@ -6,16 +6,30 @@ import bodyParser from "body-parser";
 import { UserModel, getUserModelPublicInfo } from "../schemas/user";
 import { InvitationModel } from "../schemas/invitation";
 import { ConversationModel } from "../schemas/conversation";
+import { MessageModel } from "../schemas/message";
 import "../strategies/local_strategy";
 import moment from "moment";
 import uuidv4 from "uuid/v4";
 import * as sendgrid from "./sendgrid_service";
 import session from "express-session";
 
-export const initializeApi = (app, mongoose) => {
 
+export const initializeApi = async (app, mongoose) => {
     console.log("Initializing API...")
-    app.use(cors());
+    var corsOptions = {
+        origin: function (origin, callback) {
+            if (whitelist.indexOf(origin) !== -1 || !origin) {
+                callback(null, true)
+            } else {
+                callback(new Error('Not allowed by CORS'))
+            }
+        }
+    }
+
+    app.use(cors({
+        origin: true,
+        credentials: true,
+    }));
     app.use(
         session({
             secret: process.env.SESSION_SECRET,
@@ -37,8 +51,13 @@ export const initializeApi = (app, mongoose) => {
     app.use(passport.initialize());
     app.use(passport.session());
 
-    app.post('/login', function (req, res, next) {
-        passport.authenticate('local', function (err, user, info) {
+    await UserModel.createCollection();
+    await ConversationModel.createCollection();
+    await MessageModel.createCollection();
+    await InvitationModel.createCollection();
+
+    app.post('/login', (req, res, next) => {
+        passport.authenticate('local', (err, user, info) => {
             if (err) { return next(err); }
             if (!user) { return res.status(400).send(info); }
             req.logIn(user, function (err) {
@@ -52,19 +71,19 @@ export const initializeApi = (app, mongoose) => {
         })(req, res, next);
     });
 
-    app.get("/logout", isLoggedIn, function (req, res) {
+    app.get("/logout", isLoggedIn, (req, res) => {
         req.logOut();
         res.status(200).send("Logout successfull");
     });
 
-    app.get("/user", function (req, res) {
+    app.get("/user", (req, res) => {
         if (req.user)
-            return res.status(200).send(req.user)
+            return res.status(200).json(req.user)
 
-        return res.status(400).send({ message: "You are not sign in" })
+        return res.status(400).json({ message: "You are not sign in" })
     });
 
-    app.post("/user", async (req, res) => {
+    app.post("/user", async (req, res, next) => {
         const session = await mongoose.startSession();
         const opt = { session };
         try {
@@ -76,10 +95,10 @@ export const initializeApi = (app, mongoose) => {
             const token = uuidv4();
 
             user.emailVerificationToken = token;
-            user.emailVerificationSendDate = Date.now();
+            user.emailVerificationSendDate = + Date.now();
             user.isEmailVerified = false;
-            user.creationDate = Date.now();
-            user.expireAt = moment(Date.now()).add(7, "days");
+            user.creationDate = + Date.now();
+            user.expireAt = moment(Date.now()).add(7, "days").valueOf();
 
             //Save user here to get request data validation
             user = await user.save(opt);
@@ -93,53 +112,58 @@ export const initializeApi = (app, mongoose) => {
             console.error(err);
             await session.abortTransaction();
             session.endSession();
-            return res.status(400).send(err);
+            return res.status(400).json({ message: err.message })
         }
     });
 
-    app.patch("/user", isLoggedIn, function (req, res) {
+    app.patch("/user", isLoggedIn, async (req, res) => {
         if (req.isUnauthenticated())
             return res.status(403).send({
                 message: "You are not authorized"
             });
-
-        UserModel.findOne({ _id: req.user._id }, (err, user) => {
-            if (err) return res.status(403).send(err);
+        try {
+            await UserModel.findOne({ _id: req.user._id }).exec();
 
             //swap properties
             Object.assign(user, req.body);
-            user.save(err => {
-                if (err) return res.status(403).send(err);
 
-                return res.status(200).send(user);
-            });
-        });
-    });
-
-    app.get("/users", function (req, res) {
-        UserModel.find({}, getUserModelPublicInfo()).exec((err, users) => {
-            if (err) return res.status(400).send(err)
-
-            return res.status(200).send(users);
-        })
-    });
-
-    app.get("/users/:id", function (req, res) {
-
-        UserModel.findOne({ _id: req.params.id }, getUserModelPublicInfo()).exec((err, user) => {
-            if (err) return res.status(400).send(err)
+            const user = await user.save();
 
             return res.status(200).send(user);
-        })
+
+        } catch (err) {
+            console.error(err);
+            return res.status(400).send(err)
+        }
     });
 
-    app.get("/verify/:id/:token", function (req, res) {
+    app.get("/users", async (req, res) => {
+        try {
+            const users = await UserModel.find({}, getUserModelPublicInfo()).populate(req.body.populate, getUserModelPublicInfo()).exec();
+            return res.status(200).send(users);
+        } catch (err) {
+            console.error(err);
+            return res.status(400).send({ message: err.message });
+        }
+    });
+
+    app.get("/users/:id", async (req, res) => {
+        try {
+            const user = await UserModel.findOne({ _id: req.params.id }, getUserModelPublicInfo()).populate(req.body.populate, getUserModelPublicInfo()).exec();
+            return res.status(200).send(user);
+        } catch (err) {
+            console.error(err)
+            return res.status(400).send(err)
+        }
+
+    });
+
+    app.get("/verify/:id/:token", async (req, res) => {
         var token = req.params.token;
         var userId = req.params.id;
-
-        //Get user
-        UserModel.findOne({ _id: userId }, (err, user) => {
-            if (err) return res.status(400).send(err);
+        try {
+            //Get user
+            const user = await UserModel.findOne({ _id: userId }).exec();
 
             //Check if email is not already verified
             if (user.isEmailVerified)
@@ -158,81 +182,176 @@ export const initializeApi = (app, mongoose) => {
             user.emailVerificationToken = undefined;
             user.emailVerificationSendDate = undefined;
 
-            user.save(err => {
-                if (err) return res.status(500).send(err);
+            await user.save();
+            return res.status(200).send("Email verified");
 
-                return res.status(200).send("Email verified");
-            });
-        });
-    });
-
-    app.post("/user/invite", isLoggedIn, function (req, res) {
-        var userId = req.user._id;
-        var targetId = new mongoose.Types.ObjectId(req.body.targetId);
-
-        //Check if user and target are not the same
-        if (userId == targetId)
-            return res.status(400).send({ message: "You cannot befreind yourself" });
-
-        //Check if targetId is not already our friend
-        for (const friendId of req.user.friends) {
-            if (friendId == targetId)
-                return res.status(400).send({ message: "You are already friends" });
+        } catch (err) {
+            console.error(err)
+            return res.status(400).send({ message: err.message });
         }
 
-        //Check if invitation already exists
-        InvitationModel.find(
-            {
-                $and: [{ sender: userId }, { target: targetId }]
-            },
-            (err, results) => {
-                if (err) return res.status(400).send(err);
+    });
 
-                if (results.length > 0)
-                    return res.status(400).send({ message: "Invitation was already send" });
+    app.post("/resend", async (req, res) => {
+        try {
+            let userId = req.body.id;
 
-                UserModel.findOne({ _id: targetId }, (err, invitedUser) => {
-                    if (err) return res.status(400).send(err);
+            //Get user
+            const user = await UserModel.findOne({ _id: userId }).exec();
 
-                    var invitation = new InvitationModel({
-                        date: Date.now(),
-                        sender: userId,
-                        target: targetId
-                    });
+            if (!user)
+                res.status(400).send({ message: "No user with given id found" });
 
-                    invitation.save((err, invite) => {
-                        if (err) return res.status(400).send(err);
-                        //TODO: if not cast to string it will not compare well at accept invite level
-                        invitedUser.invitations.push(invite._id);
+            //Check if email is not already verified
+            if (user.isEmailVerified)
+                return res.status(400).send({ message: "Email is already verified" });
 
-                        invitedUser.save((err, user) => {
-                            if (err) return res.status(400).send(err);
-                            return res.status(200).send(invite);
-                        });
-                    });
-                });
+            let token = uuidv4();
+
+            await sendEmailVerification(userId, user.email, token)
+
+            user.isEmailVerified = false;
+            user.emailVerificationToken = token;
+            user.emailVerificationSendDate = + new Date();
+
+            await user.save();
+            return res.status(200).send("Email verification send");
+
+        } catch (err) {
+            console.error(err)
+            return res.status(400).send({ message: err.message });
+        }
+
+    });
+
+    app.post("/user/invite", isLoggedIn, async (req, res) => {
+        const session = await mongoose.startSession();
+        const opt = { session };
+        try {
+            session.startTransaction();
+            var userId = req.user._id;
+            var targetId = req.body.targetId;
+
+            //Check if user and target are not the same
+            if (userId == targetId)
+                return res.status(400).send({ message: "You cannot befreind yourself" });
+
+            //Check if targetId is not already our friend
+            for (const friendId of req.user.friends) {
+                if (friendId == targetId)
+                    return res.status(400).send({ message: "You are already friends" });
             }
-        );
+
+            //Check if invitation already exists
+            const results = await InvitationModel.find(
+                {
+                    $and: [{ sender: userId }, { target: targetId }]
+                },
+            ).exec();
+
+            if (results.length > 0)
+                return res.status(400).send({ message: "Invitation was already send" });
+
+            const invitation = await new InvitationModel({
+                date: + Date.now(),
+                sender: userId,
+                target: targetId
+            }).save(opt);
+
+            const invitedUser = await UserModel.findOne({ _id: targetId }).exec();
+
+            //TODO: if not cast to string it will not compare well at accept invite level
+            invitedUser.invitations.push(invitation._id);
+
+            await invitedUser.save(opt);
+            await session.commitTransaction();
+            return res.status(200).send(invitation);
+
+        } catch (err) {
+            console.error(err);
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).send({ message: err.message });
+        }
+
     });
 
-    app.get("/user/invite", isLoggedIn, function (req, res) {
-        InvitationModel.find().populate(req.body.populate).exec((err, results) => {
-            if (err) return res.status(400).send(err);
-
-            return res.status(200).send(results);
-        });
+    app.get("/user/invite", isLoggedIn, async (req, res) => {
+        try {
+            const invites = await InvitationModel.find({ target: req.user._id }).populate(req.body.populate, getUserModelPublicInfo()).exec();
+            return res.status(200).send(invites);
+        } catch (err) {
+            console.error(err);
+            return res.status(400).send({ message: err.message });
+        }
     });
 
-    app.get("/user/invite/:id", isLoggedIn, function (req, res) {
-        InvitationModel.findOne({ _id: req.params.id }).populate(req.body.populate).exec((err, result) => {
-            if (err) return res.status(400).send(err);
-            return res.status(200).send(result);
-        });
+    app.get("/user/invite/:id", isLoggedIn, async (req, res) => {
+        try {
+            const invite = await InvitationModel.findOne({ $and: [{ _id: req.params.id }, { target: req.user._id }] }).populate(req.body.populate, getUserModelPublicInfo()).exec();
+            if (!invite)
+                return res.status(200).send({ message: "No invitation found" });
+            return res.status(200).send(invite);
+        } catch (err) {
+            console.error(err);
+            return res.status(400).send({ message: err.message });
+        }
     });
 
-    app.post("/user/invite/accept", isLoggedIn, function (req, res) {
-        InvitationModel.findOne({ _id: req.body.id }, (err, invitation) => {
-            if (err) return res.status(400).send(err);
+    app.get("/user/conversation", isLoggedIn, async (req, res) => {
+        try {
+            const conversations = await ConversationModel.find({ participants: req.user._id }).exec();
+            return res.status(200).send(conversations);
+        } catch (err) {
+            console.error(err);
+            return res.status(400).send({ message: err.message });
+        }
+    });
+
+    app.get("/user/conversation/:id", isLoggedIn, async (req, res) => {
+        try {
+            const conversation = await ConversationModel.findOne({ $and: [{ _id: req.params.id }, { participants: req.user._id }] }).exec();
+
+            return res.status(200).send(conversation);
+        } catch (err) {
+            console.error(err);
+            return res.status(400).send({ message: err.message });
+        }
+    });
+
+    app.get("/user/conversation/:id/message", isLoggedIn, async (req, res) => {
+        let startDate = null;
+        let endDate = null;
+        const conversationId = req.params.id;
+
+        if (req.body.startDate && req.body.endDate) {
+            startDate = req.body.startDate;
+            endDate = req.body.endDate;
+        }
+
+        try {
+            const conversation = await ConversationModel.findOne({ $and: [{ _id: conversationId }, { participants: req.user._id }] }).exec();
+            let messages = [];
+            if (endDate)
+                messages = await MessageModel.find({
+                    $and: [{ _id: conversation.messages }, { sendDate: { $gte: startDate, $lte: endDate } }]
+                }).populate('sender', getUserModelPublicInfo()).sort({ sendDate: 1 }).exec()
+            else
+                messages = await MessageModel.find({}).populate('sender', getUserModelPublicInfo()).exec()
+
+            return res.status(200).send(messages);
+        } catch (err) {
+            console.error(err);
+            return res.status(400).send({ message: err.message });
+        }
+    });
+
+    app.post("/user/invite/accept", isLoggedIn, async (req, res) => {
+        const session = await mongoose.startSession();
+        const opt = { session };
+        try {
+            session.startTransaction();
+            const invitation = await InvitationModel.findOne({ _id: req.body.id }).exec();
 
             //Check if user is target of this invitation
             if (req.user._id != invitation.target.toString())
@@ -242,58 +361,60 @@ export const initializeApi = (app, mongoose) => {
                 });
 
             //find sender and add target to his friends list
-            UserModel.findOne({ _id: invitation.sender }, (err, invitationSender) => {
-                if (err) return res.status(400).send(err);
+            const invitationSender = await UserModel.findOne({ _id: invitation.sender }).exec();
 
-                //Create conversation
-                var conversation = new ConversationModel({
-                    participants: [req.user._id, invitationSender._id]
-                })
+            //Create conversation
+            const conversation = await new ConversationModel({
+                roomId: uuidv4(),
+                participants: [req.user._id, invitationSender._id]
+            }).save(opt);
+
+            req.user.conversations.push(conversation._id)
+
+            //Add invitation sender to user's friends list
+            req.user.friends.push(invitation.sender);
+
+            //Remove invitation from recived invitations list
+            req.user.invitations = req.user.invitations.filter((item) => {
+                return item.toString() != invitation._id.toString();
             });
 
-            conversation.save((err, conversation) => {
-                if (err) return res.status(400).send(err);
+            //Save target user
+            await req.user.save(opt);
 
-                req.user.conversations.push(conversation._id)
+            //add to friend list
+            invitationSender.friends.push(invitation.target);
 
-                //Add invitation sender to user's friends list
-                req.user.friends.push(invitation.sender);
+            //add conversation
+            invitationSender.conversations.push(conversation._id);
 
-                //Remove invitation from recived invitations list
-                req.user.invitations = req.user.invitations.filter(function (item) {
-                    return item.toString() != invitation._id.toString();
-                });
+            //save changes
+            await invitationSender.save(opt);
 
-                //Save target user
-                req.user.save(err => {
-                    if (err) return res.status(400).send(err);
+            //Remove invitation
+            await invitation.remove(opt);
 
-                    //add to friend list
-                    invitationSender.friends.push(invitation.target);
+            await session.commitTransaction();
+            return res.status(200).send({ message: "Invitation accepted" });
 
-                    //add conversation
-                    invitationSender.conversations.push(conversation._id)
+        } catch (err) {
+            console.error(err);
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).send({ message: err.message });
+        }
 
-                    //save changes
-                    invitationSender.save(err => {
-                        if (err) return res.status(400).send(err);
-
-                        //Remove invitation
-                        invitation.remove(err => {
-                            if (err) return res.status(400).send(err);
-
-                            return res.status(200).send({ message: "Invitation accepted" });
-                        });
-                    });
-                });
-            })
-        });
     });
 
+    app.post("/user/invite/reject", isLoggedIn, async (req, res) => {
+        const session = await mongoose.startSession();
+        const opt = { session };
+        try {
+            session.startTransaction();
+            const invitation = await InvitationModel.findOne({ _id: req.body.id }).exec();
 
-    app.post("/user/invite/reject", isLoggedIn, function (req, res) {
-        InvitationModel.findOne({ _id: req.params.id }, (err, invitation) => {
-            if (err) return res.status(400).send(err);
+            if (!invitation)
+                return res.status(400).send({ message: "No invitation found" })
 
             //Check if user is target of this invitation
             if (req.user._id != invitation.target.toString())
@@ -303,22 +424,26 @@ export const initializeApi = (app, mongoose) => {
                 });
 
             //Remove invitation from recived invitations list
-            req.user.invitations = req.user.invitations.filter(function (item) {
-                return item != invitation._id;
+            req.user.invitations = req.user.invitations.filter((item) => {
+                return item !== invitation._id;
             });
 
             //Save changes
-            req.user.save(err => {
-                if (err) return res.status(400).send(err);
+            await req.user.save(opt);
 
-                //Remove invitation
-                invitation.remove(err => {
-                    if (err) return res.status(400).send(err);
+            //Remove invitation
+            await invitation.remove(opt);
 
-                    return res.status(200).send({ message: "Invitation rejected successfully" });
-                });
-            });
-        });
+            await session.commitTransaction();
+            return res.status(200).send({ message: "Invitation rejected successfully" });
+
+        } catch (err) {
+            console.error(err);
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).send({ message: err.message });
+        }
+
     });
 
     console.log("Done!")

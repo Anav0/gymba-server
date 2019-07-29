@@ -3,9 +3,13 @@ import mongoose from "mongoose";
 var Schema = mongoose.Schema;
 
 const Conversation = new Schema({
-    participants: {
-        type: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+    roomId: {
+        type: String,
         required: true
+    },
+    participants: {
+        type: [{ type: Schema.Types.ObjectId, ref: 'User', required: true }],
+
     },
     messages: [{ type: Schema.Types.ObjectId, ref: 'Message' }],
 });
