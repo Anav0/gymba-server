@@ -51,10 +51,14 @@ export const initializeApi = async (app, mongoose) => {
     app.use(passport.initialize());
     app.use(passport.session());
 
-    await UserModel.createCollection();
-    await ConversationModel.createCollection();
-    await MessageModel.createCollection();
-    await InvitationModel.createCollection();
+    try {
+        await UserModel.createCollection();
+        await ConversationModel.createCollection();
+        await MessageModel.createCollection();
+        await InvitationModel.createCollection();
+    } catch (err) {
+        console.error(err)
+    }
 
     app.post('/login', (req, res, next) => {
         passport.authenticate('local', (err, user, info) => {
@@ -80,7 +84,7 @@ export const initializeApi = async (app, mongoose) => {
         if (req.user)
             return res.status(200).json(req.user)
 
-        return res.status(400).json({ message: "You are not sign in" })
+        return res.status(400).json({ errors: ["You are not sign in"] })
     });
 
     app.post("/user", async (req, res, next) => {
@@ -106,20 +110,20 @@ export const initializeApi = async (app, mongoose) => {
             await sendEmailVerification(user._id, user.email, token)
 
             await session.commitTransaction();
-            return res.status(201).send({ message: "User registered successfully" });
+            return res.status(201).send(user);
 
         } catch (err) {
             console.error(err);
             await session.abortTransaction();
             session.endSession();
-            return res.status(400).json({ message: err.message })
+            return res.status(400).json(err)
         }
     });
 
     app.patch("/user", isLoggedIn, async (req, res) => {
         if (req.isUnauthenticated())
             return res.status(403).send({
-                message: "You are not authorized"
+                errors: ["You are not authorized"]
             });
         try {
             await UserModel.findOne({ _id: req.user._id }).exec();
@@ -143,7 +147,7 @@ export const initializeApi = async (app, mongoose) => {
             return res.status(200).send(users);
         } catch (err) {
             console.error(err);
-            return res.status(400).send({ message: err.message });
+            return res.status(400).send(err);
         }
     });
 
@@ -167,15 +171,15 @@ export const initializeApi = async (app, mongoose) => {
 
             //Check if email is not already verified
             if (user.isEmailVerified)
-                return res.status(400).send({ message: "Email is already verified" });
+                return res.status(400).send({ errors: ["Email is already verified"] });
 
             //Check if verification date is not > 7 days
             if (moment(user.emailVerificationSendDate).diff(Date.now(), "days") > 7)
-                return res.status(400).send({ message: "Verification link expired" });
+                return res.status(400).send({ errors: ["Verification link expired"] });
 
             //Check if token match
             if (user.emailVerificationToken != token)
-                return res.status(400).send({ message: "Invalid token" });
+                return res.status(400).send({ errors: ["Invalid token"] });
 
             user.isEmailVerified = true;
             user.expireAt = undefined;
@@ -187,12 +191,12 @@ export const initializeApi = async (app, mongoose) => {
 
         } catch (err) {
             console.error(err)
-            return res.status(400).send({ message: err.message });
+            return res.status(400).send(err);
         }
 
     });
 
-    app.post("/resend", async (req, res) => {
+    app.post("/resend-verification-email", async (req, res) => {
         try {
             let userId = req.body.id;
 
@@ -200,11 +204,18 @@ export const initializeApi = async (app, mongoose) => {
             const user = await UserModel.findOne({ _id: userId }).exec();
 
             if (!user)
-                res.status(400).send({ message: "No user with given id found" });
+                res.status(400).send({ errors: ["No user with given id found"] });
 
             //Check if email is not already verified
             if (user.isEmailVerified)
-                return res.status(400).send({ message: "Email is already verified" });
+                return res.status(400).send({ errors: ["Email is already verified"] });
+
+            if (user.emailVerificationSendDate) {
+                let minDiff = 5;
+                let diff = moment().diff(moment(user.emailVerificationSendDate), "minutes");
+                if (diff < minDiff)
+                    return res.status(400).send({ errors: [`You requested resend ${diff} minutes ago. Try again after ${minDiff} minutes`] });
+            }
 
             let token = uuidv4();
 
@@ -219,7 +230,7 @@ export const initializeApi = async (app, mongoose) => {
 
         } catch (err) {
             console.error(err)
-            return res.status(400).send({ message: err.message });
+            return res.status(400).send(err);
         }
 
     });
@@ -234,12 +245,12 @@ export const initializeApi = async (app, mongoose) => {
 
             //Check if user and target are not the same
             if (userId == targetId)
-                return res.status(400).send({ message: "You cannot befreind yourself" });
+                return res.status(400).send({ errors: ["You cannot befreind yourself"] });
 
             //Check if targetId is not already our friend
             for (const friendId of req.user.friends) {
                 if (friendId == targetId)
-                    return res.status(400).send({ message: "You are already friends" });
+                    return res.status(400).send({ errors: ["You are already friends"] });
             }
 
             //Check if invitation already exists
@@ -250,7 +261,7 @@ export const initializeApi = async (app, mongoose) => {
             ).exec();
 
             if (results.length > 0)
-                return res.status(400).send({ message: "Invitation was already send" });
+                return res.status(400).send({ errors: ["Invitation was already send"] });
 
             const invitation = await new InvitationModel({
                 date: + Date.now(),
@@ -271,7 +282,7 @@ export const initializeApi = async (app, mongoose) => {
             console.error(err);
             await session.abortTransaction();
             session.endSession();
-            return res.status(400).send({ message: err.message });
+            return res.status(400).send(err);
         }
 
     });
@@ -282,7 +293,7 @@ export const initializeApi = async (app, mongoose) => {
             return res.status(200).send(invites);
         } catch (err) {
             console.error(err);
-            return res.status(400).send({ message: err.message });
+            return res.status(400).send(err);
         }
     });
 
@@ -290,11 +301,11 @@ export const initializeApi = async (app, mongoose) => {
         try {
             const invite = await InvitationModel.findOne({ $and: [{ _id: req.params.id }, { target: req.user._id }] }).populate(req.body.populate, getUserModelPublicInfo()).exec();
             if (!invite)
-                return res.status(200).send({ message: "No invitation found" });
+                return res.status(200).send({ errors: ["No invitation found"] });
             return res.status(200).send(invite);
         } catch (err) {
             console.error(err);
-            return res.status(400).send({ message: err.message });
+            return res.status(400).send(err);
         }
     });
 
@@ -304,7 +315,7 @@ export const initializeApi = async (app, mongoose) => {
             return res.status(200).send(conversations);
         } catch (err) {
             console.error(err);
-            return res.status(400).send({ message: err.message });
+            return res.status(400).send(err);
         }
     });
 
@@ -315,7 +326,7 @@ export const initializeApi = async (app, mongoose) => {
             return res.status(200).send(conversation);
         } catch (err) {
             console.error(err);
-            return res.status(400).send({ message: err.message });
+            return res.status(400).send(err);
         }
     });
 
@@ -342,7 +353,7 @@ export const initializeApi = async (app, mongoose) => {
             return res.status(200).send(messages);
         } catch (err) {
             console.error(err);
-            return res.status(400).send({ message: err.message });
+            return res.status(400).send(err);
         }
     });
 
@@ -356,8 +367,8 @@ export const initializeApi = async (app, mongoose) => {
             //Check if user is target of this invitation
             if (req.user._id != invitation.target.toString())
                 return res.status(400).send({
-                    message:
-                        "You are not target of this invitation so you cannot accept it. Nice try doe"
+                    errors:
+                        ["You are not target of this invitation so you cannot accept it. Nice try doe"]
                 });
 
             //find sender and add target to his friends list
@@ -395,13 +406,13 @@ export const initializeApi = async (app, mongoose) => {
             await invitation.remove(opt);
 
             await session.commitTransaction();
-            return res.status(200).send({ message: "Invitation accepted" });
+            return res.status(200).send({ errors: ["Invitation accepted"] });
 
         } catch (err) {
             console.error(err);
             await session.abortTransaction();
             session.endSession();
-            return res.status(400).send({ message: err.message });
+            return res.status(400).send(err);
         }
 
     });
@@ -414,13 +425,13 @@ export const initializeApi = async (app, mongoose) => {
             const invitation = await InvitationModel.findOne({ _id: req.body.id }).exec();
 
             if (!invitation)
-                return res.status(400).send({ message: "No invitation found" })
+                return res.status(400).send({ errors: ["No invitation found"] })
 
             //Check if user is target of this invitation
             if (req.user._id != invitation.target.toString())
                 return res.status(400).send({
-                    message:
-                        "You are not target of this invitation so you cannot reject it. Nice try doe"
+                    errors: [
+                        "You are not target of this invitation so you cannot reject it. Nice try doe"]
                 });
 
             //Remove invitation from recived invitations list
@@ -435,13 +446,13 @@ export const initializeApi = async (app, mongoose) => {
             await invitation.remove(opt);
 
             await session.commitTransaction();
-            return res.status(200).send({ message: "Invitation rejected successfully" });
+            return res.status(200).send({ errors: ["Invitation rejected successfully"] });
 
         } catch (err) {
             console.error(err);
             await session.abortTransaction();
             session.endSession();
-            return res.status(400).send({ message: err.message });
+            return res.status(400).send(err);
         }
 
     });
@@ -451,13 +462,11 @@ export const initializeApi = async (app, mongoose) => {
 
 function isLoggedIn(req, res, next) {
     if (req.user) return next();
-    return res.status(403).send({ message: "You are not authenticated" });
+    return res.status(403).send({ errors: ["You are not authenticated"] });
 }
 function sendEmailVerification(userId, email, token) {
     //Create verification link containing user id and token
     const verificationLink = `${process.env.SERVER_URL}/verify/${userId}/${token}`;
-    console.log(`\n ${verificationLink} \n`);
-
     const htmlLink = `<a href="${verificationLink}">link</a>`;
     const messageOne = 'This is your email verification link:';
     const messageTwo = 'it will expire in 7 days';
@@ -468,6 +477,6 @@ function sendEmailVerification(userId, email, token) {
         "igor_motyka@mail.com",
         "Chat account verification",
         `${messageOne} ${verificationLink} ${messageTwo}`,
-        `${messageOne} ${htmlLink} ${messageTwo}`)
+        `<p> ${messageOne} ${htmlLink} ${messageTwo} </p>`)
 
 }

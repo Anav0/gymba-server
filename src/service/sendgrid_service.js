@@ -15,9 +15,9 @@ export function sendMessage(to, from, subject, text, html) {
         html: html
       };
 
-      if (mode == "dev") {
-        resolve("Email was not send becouse you are in dev mode")
-      }
+      // if (mode == "dev") {
+      //   resolve("Email was not send becouse you are in dev mode")
+      // }
       const sendResults = await sender.send(msg, false);
       resolve(sendResults);
 

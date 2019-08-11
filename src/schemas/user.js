@@ -1,19 +1,20 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import uniqueValidator from 'mongoose-unique-validator'
 
 const Schema = mongoose.Schema;
 
 const publicInfo = {
   username: {
     type: String,
-    required: true,
-    maxlength: 250,
+    required: [true, 'Username is required'],
+    maxlength: [250, "Username max length is 250"],
     index: { unique: true },
     trim: true
   },
   fullname: {
     type: String,
-    required: true,
+    required: [true, 'Fullname is required'],
     maxlength: [250, "Name max length is 250"],
     trim: true
   },
@@ -39,7 +40,7 @@ const User = new Schema({
   },
   password: {
     type: String,
-    required: true,
+    required: [true, 'Password is required'],
     minlength: [6, "Password needs to be at least 6 characters long"],
     maxlength: [250, "Password max length is 250"],
     trim: true
@@ -47,7 +48,7 @@ const User = new Schema({
   //TODO: make this field unique only after testing
   email: {
     type: String,
-    required: true,
+    required: [true, 'Email is required'],
     maxlength: 250,
     trim: true,
     match: [
@@ -114,4 +115,5 @@ export const getUserModelPublicInfo = () => {
   return Object.getOwnPropertyNames(publicInfo)
 }
 
+User.plugin(uniqueValidator, { message: "{VALUE} is already taken" })
 export const UserModel = mongoose.model("User", User);
