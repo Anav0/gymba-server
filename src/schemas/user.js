@@ -104,7 +104,7 @@ User.pre("save", function (next) {
   });
 });
 
-User.methods.comparePassword = function (candidatePassword, callback) {
+User.methods.comparePassword = (candidatePassword, callback) => {
   bcrypt.compare(candidatePassword, this.password, function (err, isMatch) {
     if (err) return callback(err);
     callback(null, isMatch);

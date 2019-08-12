@@ -3,10 +3,7 @@ const MongoStore = require("connect-mongo")(session);
 import multer from "multer";
 import passport from "passport";
 import bodyParser from "body-parser";
-import { UserModel, getUserModelPublicInfo } from "../schemas/user";
-import { InvitationModel } from "../schemas/invitation";
-import { ConversationModel } from "../schemas/conversation";
-import { MessageModel } from "../schemas/message";
+import { MessageModel, ConversationModel, InvitationModel, UserModel, getUserModelPublicInfo } from "../schemas";
 import "../strategies/local_strategy";
 import moment from "moment";
 import uuidv4 from "uuid/v4";
@@ -17,7 +14,7 @@ import session from "express-session";
 export const initializeApi = async (app, mongoose) => {
     console.log("Initializing API...")
     var corsOptions = {
-        origin: function (origin, callback) {
+        origin: (origin, callback) => {
             if (whitelist.indexOf(origin) !== -1 || !origin) {
                 callback(null, true)
             } else {
@@ -64,7 +61,7 @@ export const initializeApi = async (app, mongoose) => {
         passport.authenticate('local', (err, user, info) => {
             if (err) { return next(err); }
             if (!user) { return res.status(400).send(info); }
-            req.logIn(user, function (err) {
+            req.logIn(user, (err) => {
                 if (err) { return next(err); }
                 let responce = {
                     user: user,

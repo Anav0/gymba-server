@@ -1,18 +1,17 @@
 import Strategy from "passport-local";
 import passport from "passport";
-
-import { UserModel } from "../schemas/user";
+import { UserModel } from "../schemas";
 
 passport.use(
-  new Strategy(function (username, password, done) {
+  new Strategy((username, password, done) => {
     username = username.trim();
     password = password.trim();
-    UserModel.findOne({ username: username }, function (err, user) {
+    UserModel.findOne({ username: username }, (err, user) => {
       if (err) {
         return done(err);
       }
       if (!user) {
-        return done(null, false, { message: "Wrong username or password." });
+        return done(null, false, { errors: ["Wrong username or password."] });
       }
       if (!user.isEmailVerified)
         return done(null, false, {
@@ -23,7 +22,7 @@ passport.use(
         if (err) return done(err);
 
         if (!isMatch)
-          return done(null, false, { message: "Wrong username or password." });
+          return done(null, false, { errors: ["Wrong username or password."] });
 
         if (isMatch) return done(null, user);
       });
@@ -31,12 +30,12 @@ passport.use(
   })
 );
 
-passport.serializeUser(function (user, done) {
+passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
-passport.deserializeUser(function (id, done) {
-  UserModel.findById(id, function (err, user) {
+passport.deserializeUser((id, done) => {
+  UserModel.findById(id, (err, user) => {
     done(err, user);
   });
 });
