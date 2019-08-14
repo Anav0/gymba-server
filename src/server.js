@@ -2,7 +2,7 @@ var app = require("express")();
 require("dotenv").config();
 var server = require("http").Server(app);
 import { initializeSocket } from "./service/socket"
-import { initializeApi } from "./service/api"
+import { initializeApi } from "./api"
 import mongoose from "mongoose";
 
 try {
@@ -16,7 +16,7 @@ try {
   initializeSocket(server)
   initializeApi(app, mongoose)
 
-  server.listen(3000);
+  server.listen(8000);
 } catch (err) {
   console.error(err)
 }

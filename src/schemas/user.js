@@ -103,9 +103,9 @@ User.pre("save", function (next) {
     });
   });
 });
-
-User.methods.comparePassword = (candidatePassword, callback) => {
-  bcrypt.compare(candidatePassword, this.password, function (err, isMatch) {
+//WARNING!!! do not change to arrow function, reason above
+User.methods.comparePassword = function (candidatePassword, callback) {
+  bcrypt.compare(candidatePassword, this.password, (err, isMatch) => {
     if (err) return callback(err);
     callback(null, isMatch);
   });
@@ -115,5 +115,5 @@ export const getUserModelPublicInfo = () => {
   return Object.getOwnPropertyNames(publicInfo)
 }
 
-User.plugin(uniqueValidator, { message: "{VALUE} is already taken" })
+User.plugin(uniqueValidator, { errors: ["{VALUE} is already taken"] })
 export const UserModel = mongoose.model("User", User);
