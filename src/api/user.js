@@ -1,14 +1,19 @@
 import uuidv4 from "uuid/v4";
 import settings from "../settings";
 import moment from "moment";
-import { UserModel } from "../schemas";
+import { UserModel, getUserModelPublicInfo, InvitationModel } from "../schemas";
 import { sendEmailVerification, isLoggedIn } from "../api"
 
 export const setupUserEndpoints = (app, mongoose) => {
 
-    app.get("/user", (req, res) => {
-        if (req.user)
-            return res.status(200).json(req.user)
+    app.get("/user", async (req, res) => {
+        if (req.user) {
+            try {
+                return res.status(200).json(req.user)
+            } catch (err) {
+                return res.status(400).json({ errors: [err.message] })
+            }
+        }
 
         return res.status(400).json({ errors: ["You are not sign in"] })
     });
@@ -66,4 +71,18 @@ export const setupUserEndpoints = (app, mongoose) => {
             return res.status(400).send(err)
         }
     });
+
+    //TODO: Change later
+    app.get("/user/suggested-friends", isLoggedIn, async (req, res) => {
+        try {
+            const sendInvitations = await InvitationModel.find({ sender: req.user._id }).exec();
+            const targetIds = sendInvitations.map(invite => invite.target)
+            const users = await UserModel.find({ $and: [{ _id: { $ne: req.user._id } }, { _id: { $nin: targetIds } }] }, getUserModelPublicInfo()).exec();
+            return res.status(200).send(users);
+        } catch (err) {
+            console.error(err);
+            return res.status(400).send(err);
+        }
+    });
+
 }

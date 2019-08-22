@@ -55,9 +55,19 @@ export const setupInviteEndpoints = (app, mongoose) => {
 
     });
 
-    app.get("/user/invite", isLoggedIn, async (req, res) => {
+    app.get("/user/invite/:populate", isLoggedIn, async (req, res) => {
         try {
-            const invites = await InvitationModel.find({ target: req.user._id }).populate(req.body.populate, getUserModelPublicInfo()).exec();
+            const invites = await InvitationModel.find({ sender: req.user._id }).populate(req.params.populate, getUserModelPublicInfo()).exec();
+            return res.status(200).send(invites);
+        } catch (err) {
+            console.error(err);
+            return res.status(400).send(err);
+        }
+    });
+
+    app.get("/user/recived-invite/:populate", isLoggedIn, async (req, res) => {
+        try {
+            const invites = await InvitationModel.find({ target: req.user._id }).populate(req.params.populate, getUserModelPublicInfo()).exec();
             return res.status(200).send(invites);
         } catch (err) {
             console.error(err);
@@ -155,8 +165,8 @@ export const setupInviteEndpoints = (app, mongoose) => {
                 });
 
             //Remove invitation from recived invitations list
-            req.user.invitations = req.user.invitations.filter((item) => {
-                return item !== invitation._id;
+            req.user.invitations = req.user.invitations.filter((id) => {
+                return id.toString() != invitation._id.toString();
             });
 
             //Save changes
@@ -166,7 +176,49 @@ export const setupInviteEndpoints = (app, mongoose) => {
             await invitation.remove(opt);
 
             await session.commitTransaction();
-            return res.status(200).send({ errors: ["Invitation rejected successfully"] });
+            return res.status(200).send("Invitation rejected successfully");
+
+        } catch (err) {
+            console.error(err);
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).send(err);
+        }
+
+    });
+
+    app.post("/user/invite/cancel", isLoggedIn, async (req, res) => {
+        const session = await mongoose.startSession();
+        const opt = { session };
+        try {
+            session.startTransaction();
+            const invitation = await InvitationModel.findOne({ _id: req.body.id }).exec();
+
+            if (!invitation)
+                return res.status(400).send({ errors: ["No invitation found"] })
+
+            //Check if user is sender of this invitation
+            if (req.user._id != invitation.sender.toString())
+                return res.status(400).send({
+                    errors: [
+                        "You are not sender of this invitation so you cannot cancel it. Nice try doe"]
+                });
+
+            const target = await UserModel.findById(invitation.target).select('+invitations').exec();
+
+            //Remove invitation from recived invitations list
+            target.invitations = target.invitations.filter((id) => {
+                return id.toString() != invitation._id.toString();
+            });
+
+            //Save changes
+            await target.save(opt);
+
+            //Remove invitation
+            await invitation.remove(opt);
+
+            await session.commitTransaction();
+            return res.status(200).send("Invitation cancel successfully");
 
         } catch (err) {
             console.error(err);
