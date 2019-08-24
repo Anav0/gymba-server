@@ -12,7 +12,7 @@ export default {
         unit: 'days'
     },
     validationEmailResend: {
-        validFor: 5,
+        validFor: 1,
         unit: 'minutes'
     },
 }

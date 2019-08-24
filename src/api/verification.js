@@ -1,7 +1,9 @@
-import { isLoggedIn } from "./index";
 import { UserModel } from "../schemas";
 import moment from "moment";
 import settings from "../settings";
+import uuidv4 from "uuid/v4";
+import { sendEmailVerification } from "../api"
+
 export const setupVerificationEndpoints = (app, mongoose) => {
 
     app.get("/verify/:id/:token", async (req, res) => {
