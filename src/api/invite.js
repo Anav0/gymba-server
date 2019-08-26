@@ -1,5 +1,6 @@
 import { isLoggedIn } from "./index";
 import { InvitationModel, ConversationModel, UserModel, getUserModelPublicInfo } from "../schemas";
+import uuidv4 from "uuid/v4";
 
 export const setupInviteEndpoints = (app, mongoose) => {
 
@@ -13,7 +14,7 @@ export const setupInviteEndpoints = (app, mongoose) => {
 
             //Check if user and target are not the same
             if (userId == targetId)
-                return res.status(400).send({ errors: ["You cannot befreind yourself"] });
+                return res.status(400).send({ errors: ["You cannot befriend yourself"] });
 
             //Check if targetId is not already our friend
             for (const friendId of req.user.friends) {
@@ -94,6 +95,12 @@ export const setupInviteEndpoints = (app, mongoose) => {
             session.startTransaction();
             const invitation = await InvitationModel.findOne({ _id: req.body.id }).exec();
 
+            if (!invitation)
+                return res.status(400).send({
+                    errors:
+                        ["No invitation found"]
+                });
+
             //Check if user is target of this invitation
             if (req.user._id != invitation.target.toString())
                 return res.status(400).send({
@@ -158,7 +165,7 @@ export const setupInviteEndpoints = (app, mongoose) => {
                 return res.status(400).send({ errors: ["No invitation found"] })
 
             //Check if user is target of this invitation
-            if (req.user._id != invitation.target.toString())
+            if (req.user._id.toString() != invitation.target.toString())
                 return res.status(400).send({
                     errors: [
                         "You are not target of this invitation so you cannot reject it. Nice try doe"]

@@ -72,17 +72,19 @@ export const setupUserEndpoints = (app, mongoose) => {
         }
     });
 
-    //TODO: Change later
     app.get("/user/suggested-friends", isLoggedIn, async (req, res) => {
         try {
-            const sendInvitations = await InvitationModel.find({ sender: req.user._id }).exec();
-            const targetIds = sendInvitations.map(invite => invite.target)
-            const users = await UserModel.find({ $and: [{ _id: { $ne: req.user._id } }, { _id: { $nin: targetIds } }] }, getUserModelPublicInfo()).exec();
+            const invitations = await InvitationModel.find({ $or: [{ sender: req.user._id }, { target: req.user._id }] }).exec();
+            console.log(invitations)
+            let ids = invitations.map(invite => invite.target)
+            ids.push(...invitations.map(invite => invite.sender))
+            console.log(ids)
+            const users = await UserModel.find({ $and: [{ _id: { $ne: req.user._id } }, { _id: { $nin: ids } }, { _id: { $nin: req.user.friends } }] }, getUserModelPublicInfo()).exec();
             return res.status(200).send(users);
         } catch (err) {
             console.error(err);
             return res.status(400).send(err);
         }
     });
-
+    //TODO: Add endpoint that will return user's favorite contacts
 }

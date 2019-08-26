@@ -12,7 +12,6 @@ import settings from "../settings";
 import { setupConversationEndpoints } from "./conversation";
 import { setupInviteEndpoints } from "./invite";
 import { setupLoginEndpoints } from "./login";
-import { setupOpinionEndpoints } from "./opinion";
 import { setupUserEndpoints } from "./user";
 import { setupUsersEndpoints } from "./users";
 import { setupVerificationEndpoints } from "./verification";
@@ -54,7 +53,6 @@ export const initializeApi = async (app, mongoose) => {
         setupConversationEndpoints(app)
         setupInviteEndpoints(app, mongoose)
         setupLoginEndpoints(app)
-        setupOpinionEndpoints(app)
         setupUserEndpoints(app, mongoose)
         setupUsersEndpoints(app)
         setupVerificationEndpoints(app)
@@ -69,6 +67,7 @@ export function isLoggedIn(req, res, next) {
     if (req.user) return next();
     return res.status(403).send({ errors: ["You are not authenticated"] });
 }
+
 export function sendEmailVerification(userId, email, token) {
     //Create verification link containing user id and token
     const verificationLink = `${process.env.SERVER_URL}/verify/${userId}/${token}`;

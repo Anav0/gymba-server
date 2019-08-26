@@ -14,7 +14,7 @@ export const setupUsersEndpoints = (app, mongoose) => {
 
     app.get("/users/:id", async (req, res) => {
         try {
-            const user = await UserModel.findOne({ _id: req.params.id }, getUserModelPublicInfo()).populate(req.body.populate, getUserModelPublicInfo()).exec();
+            const user = await UserModel.findOne({ _id: req.params.id }, getUserModelPublicInfo()).exec();
             return res.status(200).send(user);
         } catch (err) {
             console.error(err)

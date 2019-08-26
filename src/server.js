@@ -16,7 +16,7 @@ try {
   initializeSocket(server)
   initializeApi(app, mongoose)
 
-  server.listen(8000);
+  server.listen(3000);
 } catch (err) {
   console.error(err)
 }

@@ -55,7 +55,6 @@ export const setupVerificationEndpoints = (app, mongoose) => {
                 return res.status(400).send({ errors: ["Email is already verified"] });
 
             if (user.emailVerificationSendDate) {
-
                 let diff = moment().diff(moment(user.emailVerificationSendDate), settings.validationEmailResend.unit);
                 if (diff < settings.validationEmailResend.validFor)
                     return res.status(400).send({ errors: [`You requested resend ${diff} minutes ago. Try again after ${settings.validationEmailResend.validFor} minutes`] });

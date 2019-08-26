@@ -13,7 +13,6 @@ export function sendMessage(to, from, subject, text, html) {
         subject: subject,
         text: text,
       };
-      console.log(msg)
       // if (isDevMode) {
       //   resolve("Email was not send becouse you are in dev mode")
       // }
