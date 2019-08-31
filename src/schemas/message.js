@@ -16,7 +16,7 @@ const Message = new Schema({
     status: {
         type: String,
         required: true,
-        enum: ['Send', 'Delivered', 'Received']
+        enum: ['send', 'delivered', 'received']
     },
     content: {
         type: String,

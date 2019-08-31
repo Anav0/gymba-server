@@ -23,6 +23,7 @@ export const initializeApi = async (app, mongoose) => {
         origin: true,
         credentials: true,
     }));
+
     app.use(
         session({
             secret: process.env.SESSION_SECRET,
@@ -33,6 +34,7 @@ export const initializeApi = async (app, mongoose) => {
             store: new MongoStore({ mongooseConnection: mongoose.connection })
         })
     );
+
     //for parsing application/xwww...
     app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -73,7 +75,7 @@ export function sendEmailVerification(userId, email, token) {
     const verificationLink = `${process.env.SERVER_URL}/verify/${userId}/${token}`;
     const htmlLink = `<a href="${verificationLink}">link</a>`;
     const messageOne = 'This is your email verification link:';
-    const messageTwo = 'it will expire in 7 days';
+    const messageTwo = `it will expire in ${settings.validationEmail.validFor} ${settings.validationEmail.unit}`;
 
     //Send verification email
     return sendgrid.sendMessage(

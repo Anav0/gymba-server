@@ -14,8 +14,7 @@ export const setupConversationEndpoints = (app) => {
 
     app.get("/user/conversation/:id", isLoggedIn, async (req, res) => {
         try {
-            const conversation = await ConversationModel.findOne({ $and: [{ _id: req.params.id }, { participants: req.user._id }] }).exec();
-
+            const conversation = await ConversationModel.findOne({ $and: [{ _id: req.params.id }, { participants: req.user._id }] }).populate('participants', getUserModelPublicInfo()).exec();
             return res.status(200).send(conversation);
         } catch (err) {
             console.error(err);
@@ -24,7 +23,7 @@ export const setupConversationEndpoints = (app) => {
     });
 
     app.get("/user/conversation/:id/message", isLoggedIn, async (req, res) => {
-        let startDate = null;
+        let startDate = new Date();
         let endDate = null;
         const conversationId = req.params.id;
 

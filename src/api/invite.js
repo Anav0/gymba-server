@@ -155,6 +155,7 @@ export const setupInviteEndpoints = (app, mongoose) => {
     });
 
     app.post("/user/invite/reject", isLoggedIn, async (req, res) => {
+        //TODO: think about making transaction middleware
         const session = await mongoose.startSession();
         const opt = { session };
         try {
@@ -180,9 +181,11 @@ export const setupInviteEndpoints = (app, mongoose) => {
             await req.user.save(opt);
 
             //Remove invitation
+            //TODO: remove() should cascade then any relaction to object will be removed as well
             await invitation.remove(opt);
 
             await session.commitTransaction();
+            //TODO: thing about i18n, maybe passing lang param will do the trick
             return res.status(200).send("Invitation rejected successfully");
 
         } catch (err) {

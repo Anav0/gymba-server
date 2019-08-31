@@ -77,6 +77,10 @@ User.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
 
 /* Mongoose middleware is not invoked on update() operations,
  so you must use a save() if you want to update user passwords */
+User.pre('remove', function (next) {
+
+  next();
+});
 
 //WARNING! this function cannot have arrow syntax becouse "this" will be undefined
 User.pre("save", function (next) {
