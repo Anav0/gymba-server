@@ -9,9 +9,8 @@ const Conversation = new Schema({
     },
     participants: {
         type: [{ type: Schema.Types.ObjectId, ref: 'User', required: true }],
-
     },
     messages: [{ type: Schema.Types.ObjectId, ref: 'Message' }],
 });
-
+//TODO: add pre update hook to check if number of participants is not < 2. If so delete the conversation
 export const ConversationModel = mongoose.model("Conversation", Conversation);

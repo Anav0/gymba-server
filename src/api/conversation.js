@@ -12,6 +12,19 @@ export const setupConversationEndpoints = (app) => {
         }
     });
 
+    app.get("/user/conversation/participant/:partId/:numberOfPart?", isLoggedIn, async (req, res) => {
+        try {
+            let conversations = []
+            if (req.params.numberOfPart)
+                conversations = await ConversationModel.find({ $and: [{ participants: req.user._id }, { participants: req.params.partId }, { participants: { $size: req.params.numberOfPart } }] }).exec();
+            else conversations = await ConversationModel.find({ $and: [{ participants: req.user._id }, { participants: req.params.partId }] }).exec();
+            return res.status(200).send(conversations);
+        } catch (err) {
+            console.error(err);
+            return res.status(400).send(err);
+        }
+    });
+
     app.get("/user/conversation/:id", isLoggedIn, async (req, res) => {
         try {
             const conversation = await ConversationModel.findOne({ $and: [{ _id: req.params.id }, { participants: req.user._id }] }).populate('participants', getUserModelPublicInfo()).exec();
@@ -22,7 +35,7 @@ export const setupConversationEndpoints = (app) => {
         }
     });
 
-    app.get("/user/conversation/:id/message", isLoggedIn, async (req, res) => {
+    app.get("/user/conversation/:id/messages", isLoggedIn, async (req, res) => {
         let startDate = new Date();
         let endDate = null;
         const conversationId = req.params.id;

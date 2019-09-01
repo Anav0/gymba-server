@@ -16,6 +16,7 @@ import { setupUserEndpoints } from "./user";
 import { setupUsersEndpoints } from "./users";
 import { setupVerificationEndpoints } from "./verification";
 
+//TODO: Add  friendships table to DB to store information about friendships duration, etc etc.
 export const initializeApi = async (app, mongoose) => {
     console.log("Initializing API...")
 
