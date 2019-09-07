@@ -46,7 +46,7 @@ router.post("/", isLoggedIn, async (req, res) => {
 
         await invitedUser.save(opt);
         await session.commitTransaction();
-        return res.status(200).send(invitation);
+        return res.status(200).json(invitation);
 
     } catch (error) {
         console.error(error);
@@ -60,7 +60,7 @@ router.post("/", isLoggedIn, async (req, res) => {
 router.get("/:populate?", isLoggedIn, async (req, res) => {
     try {
         const invites = await InvitationModel.find({ sender: req.user._id }).populate(!req.params.populate ? '' : req.params.populate, getUserModelPublicInfo()).exec();
-        return res.status(200).send(invites);
+        return res.status(200).json(invites);
     } catch (error) {
         console.error(error);
         next(error)
@@ -71,8 +71,8 @@ router.get("/:id", isLoggedIn, async (req, res) => {
     try {
         const invite = await InvitationModel.findOne({ $and: [{ _id: req.params.id }, { target: req.user._id }] }).populate(!req.params.populate ? '' : req.params.populate, getUserModelPublicInfo()).exec();
         if (!invite)
-            return res.status(200).send({ errors: ["No invitation found"] });
-        return res.status(200).send(invite);
+            return res.status(200).json({ errors: ["No invitation found"] });
+        return res.status(200).json(invite);
     } catch (error) {
         console.error(error);
         next(error)
@@ -134,7 +134,7 @@ router.post("/accept", isLoggedIn, async (req, res) => {
         await invitation.remove(opt);
 
         await session.commitTransaction();
-        return res.status(200).send({ errors: ["Invitation accepted"] });
+        return res.status(200).json({ errors: ["Invitation accepted"] });
 
     } catch (error) {
         console.error(error);
@@ -233,7 +233,7 @@ router.post("/cancel", isLoggedIn, async (req, res) => {
 router.get("/recived/:populate?", isLoggedIn, async (req, res) => {
     try {
         const invites = await InvitationModel.find({ target: req.user._id }).populate(!req.params.populate ? '' : req.params.populate, getUserModelPublicInfo()).exec();
-        return res.status(200).send(invites);
+        return res.status(200).json(invites);
     } catch (error) {
         console.error(error);
         next(error)
