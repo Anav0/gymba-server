@@ -6,7 +6,7 @@ const router = express.Router();
 router.get("/", async (req, res) => {
     try {
         const users = await UserModel.find({}, getUserModelPublicInfo()).populate(req.body.populate, getUserModelPublicInfo()).exec();
-        return res.status(200).send(users);
+        return res.status(200).json(users);
     } catch (error) {
         console.error(error);
         next(error)
@@ -16,7 +16,7 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
     try {
         const user = await UserModel.findOne({ _id: req.params.id }, getUserModelPublicInfo()).exec();
-        return res.status(200).send(user);
+        return res.status(200).json(user);
     } catch (error) {
         console.error(error)
         return res.status(400).json(error)
