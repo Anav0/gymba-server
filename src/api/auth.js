@@ -24,9 +24,10 @@ router.get("/logout", isLoggedIn, (req, res) => {
 });
 
 router.get("/verify/:id/:token", async (req, res) => {
-    var token = req.params.token;
-    var userId = req.params.id;
     try {
+        const token = req.params.token;
+        const userId = req.params.id;
+
         //Get user
         const user = await UserModel.findOne({ _id: userId }).exec();
 
@@ -59,7 +60,7 @@ router.get("/verify/:id/:token", async (req, res) => {
 
 router.post("/resend-email", async (req, res) => {
     try {
-        let userId = req.body.id;
+        const userId = req.body.id;
 
         //Get user
         const user = await UserModel.findOne({ _id: userId }).exec();

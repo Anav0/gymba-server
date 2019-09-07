@@ -2,6 +2,7 @@ import { isLoggedIn } from "./index";
 import { InvitationModel, ConversationModel, UserModel, getUserModelPublicInfo } from "../schemas";
 import uuidv4 from "uuid/v4";
 import express from 'express';
+import mongoose from "mongoose";
 const router = express.Router();
 
 router.post("/", isLoggedIn, async (req, res) => {
