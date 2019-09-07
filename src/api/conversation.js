@@ -19,7 +19,7 @@ router.get("/participant/:partId/:numberOfPart?", isLoggedIn, async (req, res) =
         if (req.params.numberOfPart)
             conversations = await ConversationModel.find({ $and: [{ participants: req.user._id }, { participants: req.params.partId }, { participants: { $size: req.params.numberOfPart } }] }).exec();
         else conversations = await ConversationModel.find({ $and: [{ participants: req.user._id }, { participants: req.params.partId }] }).exec();
-        return res.status(200).send(conversations);
+        return res.status(200).json(conversations);
     } catch (error) {
         console.error(error);
         next(error)
@@ -29,7 +29,7 @@ router.get("/participant/:partId/:numberOfPart?", isLoggedIn, async (req, res) =
 router.get("/:id", isLoggedIn, async (req, res) => {
     try {
         const conversation = await ConversationModel.findOne({ $and: [{ _id: req.params.id }, { participants: req.user._id }] }).populate('participants', getUserModelPublicInfo()).exec();
-        return res.status(200).send(conversation);
+        return res.status(200).json(conversation);
     } catch (error) {
         console.error(error);
         next(error)
@@ -56,7 +56,7 @@ router.get("/:id/messages", isLoggedIn, async (req, res) => {
         else
             messages = await MessageModel.find({}).populate('sender', getUserModelPublicInfo()).exec()
 
-        return res.status(200).send(messages);
+        return res.status(200).json(messages);
     } catch (error) {
         console.error(error);
         next(error)
