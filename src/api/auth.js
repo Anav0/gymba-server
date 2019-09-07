@@ -6,7 +6,7 @@ const router = express.Router();
 router.post('/login', (req, res, next) => {
     passport.authenticate('local', (error, user, info) => {
         if (error) { return next(error); }
-        if (!user) { return res.status(400).send(info); }
+        if (!user) { return res.status(400).json(info); }
         req.logIn(user, (error) => {
             if (error) { return next(error); }
             let responce = {
@@ -32,15 +32,15 @@ router.get("/verify/:id/:token", async (req, res) => {
 
         //Check if email is not already verified
         if (user.isEmailVerified)
-            return res.status(400).send({ errors: ["Email is already verified"] });
+            return res.status(400).json({ errors: ["Email is already verified"] });
 
         //Check if verification date is not > 7 days
         if (moment(user.emailVerificationSendDate).diff(Date.now(), settings.validationEmail.unit) > settings.validationEmail.validFor)
-            return res.status(400).send({ errors: ["Verification link expired"] });
+            return res.status(400).json({ errors: ["Verification link expired"] });
 
         //Check if token match
         if (user.emailVerificationToken != token)
-            return res.status(400).send({ errors: ["Invalid token"] });
+            return res.status(400).json({ errors: ["Invalid token"] });
 
         user.isEmailVerified = true;
         user.expireAt = undefined;
@@ -69,12 +69,12 @@ router.post("/resend-email", async (req, res) => {
 
         //Check if email is not already verified
         if (user.isEmailVerified)
-            return res.status(400).send({ errors: ["Email is already verified"] });
+            return res.status(400).json({ errors: ["Email is already verified"] });
 
         if (user.emailVerificationSendDate) {
             let diff = moment().diff(moment(user.emailVerificationSendDate), settings.validationEmailResend.unit);
             if (diff < settings.validationEmailResend.validFor)
-                return res.status(400).send({ errors: [`You requested resend ${diff} minutes ago. Try again after ${settings.validationEmailResend.validFor} minutes`] });
+                return res.status(400).json({ errors: [`You requested resend ${diff} minutes ago. Try again after ${settings.validationEmailResend.validFor} minutes`] });
         }
 
         let token = uuidv4();

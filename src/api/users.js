@@ -19,7 +19,7 @@ router.get("/:id", async (req, res) => {
         return res.status(200).send(user);
     } catch (error) {
         console.error(error)
-        return res.status(400).send(error)
+        return res.status(400).json(error)
     }
 
 });

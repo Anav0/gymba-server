@@ -68,7 +68,7 @@ router.patch("/", isLoggedIn, async (req, res) => {
 
     } catch (error) {
         console.error(error);
-        return res.status(400).send(error)
+        return res.status(400).json(error)
     }
 });
 

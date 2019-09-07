@@ -14,12 +14,12 @@ router.post("/", isLoggedIn, async (req, res) => {
 
         //Check if user and target are not the same
         if (userId == targetId)
-            return res.status(400).send({ errors: ["You cannot befriend yourself"] });
+            return res.status(400).json({ errors: ["You cannot befriend yourself"] });
 
         //Check if targetId is not already our friend
         for (const friendId of req.user.friends) {
             if (friendId == targetId)
-                return res.status(400).send({ errors: ["You are already friends"] });
+                return res.status(400).json({ errors: ["You are already friends"] });
         }
 
         //Check if invitation already exists
@@ -30,7 +30,7 @@ router.post("/", isLoggedIn, async (req, res) => {
         ).exec();
 
         if (results.length > 0)
-            return res.status(400).send({ errors: ["Invitation was already send"] });
+            return res.status(400).json({ errors: ["Invitation was already send"] });
 
         const invitation = await new InvitationModel({
             date: + Date.now(),
@@ -86,14 +86,14 @@ router.post("/accept", isLoggedIn, async (req, res) => {
         const invitation = await InvitationModel.findOne({ _id: req.body.id }).exec();
 
         if (!invitation)
-            return res.status(400).send({
+            return res.status(400).json({
                 errors:
                     ["No invitation found"]
             });
 
         //Check if user is target of this invitation
         if (req.user._id != invitation.target.toString())
-            return res.status(400).send({
+            return res.status(400).json({
                 errors:
                     ["You are not target of this invitation so you cannot accept it. Nice try doe"]
             });
@@ -153,11 +153,11 @@ router.post("/reject", isLoggedIn, async (req, res) => {
         const invitation = await InvitationModel.findOne({ _id: req.body.id }).exec();
 
         if (!invitation)
-            return res.status(400).send({ errors: ["No invitation found"] })
+            return res.status(400).json({ errors: ["No invitation found"] })
 
         //Check if user is target of this invitation
         if (req.user._id.toString() != invitation.target.toString())
-            return res.status(400).send({
+            return res.status(400).json({
                 errors: [
                     "You are not target of this invitation so you cannot reject it. Nice try doe"]
             });
@@ -195,11 +195,11 @@ router.post("/cancel", isLoggedIn, async (req, res) => {
         const invitation = await InvitationModel.findOne({ _id: req.body.id }).exec();
 
         if (!invitation)
-            return res.status(400).send({ errors: ["No invitation found"] })
+            return res.status(400).json({ errors: ["No invitation found"] })
 
         //Check if user is sender of this invitation
         if (req.user._id != invitation.sender.toString())
-            return res.status(400).send({
+            return res.status(400).json({
                 errors: [
                     "You are not sender of this invitation so you cannot cancel it. Nice try doe"]
             });
