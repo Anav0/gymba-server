@@ -1,6 +1,9 @@
 import { isLoggedIn } from "./index";
 import passport from "passport";
 import express from "express";
+import { UserModel } from "../schemas"
+import moment from "moment"
+import settings from "../settings"
 const router = express.Router();
 
 router.post('/login', (req, res, next) => {
