@@ -13,7 +13,7 @@ router.post('/login', (req, res, next) => {
                 user: user,
                 session: req.session
             }
-            return res.status(200).send(responce)
+            return res.status(200).json(responce)
         });
     })(req, res, next);
 });
@@ -66,7 +66,7 @@ router.post("/resend-email", async (req, res) => {
         const user = await UserModel.findOne({ _id: userId }).exec();
 
         if (!user)
-            res.status(400).send({ errors: ["No user with given id found"] });
+            res.status(400).json({ errors: ["No user with given id found"] });
 
         //Check if email is not already verified
         if (user.isEmailVerified)

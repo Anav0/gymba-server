@@ -69,7 +69,7 @@ console.log("Done!")
 
 export function isLoggedIn(req, res, next) {
     if (req.user) return next();
-    return res.status(403).send({ errors: ["You are not authenticated"] });
+    return res.status(403).json({ errors: ["You are not authenticated"] });
 }
 
 export function sendEmailVerification(userId, email, token) {
