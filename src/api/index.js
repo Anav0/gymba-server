@@ -51,9 +51,8 @@ app.use("/users", usersEndpoints)
 app.use("/auth", authEndpoints)
 app.use("/invite", inviteEndpoints)
 app.use("/conversation", conversationEndpoints)
-app.use((error, req, res) => {
-    res.status = error.status || 500
-    return res.json({ errors: [error.message] })
+app.use((error, req, res, next) => {
+    return res.status(error.status || 500).json({ errors: [error.message] })
 })
 try {
     UserModel.createCollection();
