@@ -102,30 +102,27 @@ router.post("/accept", isLoggedIn, async (req, res) => {
         //find sender and add target to his friends list
         const invitationSender = await UserModel.findOne({ _id: invitation.sender }).exec();
 
+        if (!invitationSender)
+            newxt(new Error("Sender no longer exists"))
+
         //Create conversation
         const conversation = await new ConversationModel({
             roomId: uuidv4(),
             participants: [req.user._id, invitationSender._id]
         }).save(opt);
 
+        //add conversation
         req.user.conversations.push(conversation._id)
+        invitationSender.conversations.push(conversation._id);
 
         //Add invitation sender to user's friends list
         req.user.friends.push(invitation.sender);
 
-        //Remove invitation from recived invitations list
-        req.user.invitations = req.user.invitations.filter((item) => {
-            return item.toString() != invitation._id.toString();
-        });
-
-        //Save target user
-        await req.user.save(opt);
-
         //add to friend list
         invitationSender.friends.push(invitation.target);
 
-        //add conversation
-        invitationSender.conversations.push(conversation._id);
+        //Save target user
+        await req.user.save(opt);
 
         //save changes
         await invitationSender.save(opt);
@@ -156,70 +153,21 @@ router.post("/reject", isLoggedIn, async (req, res) => {
         if (!invitation)
             return res.status(400).json({ errors: ["No invitation found"] })
 
-        //Check if user is target of this invitation
-        if (req.user._id.toString() != invitation.target.toString())
+        //Check if user is target or sender of this invitation
+        if (req.user._id.toString() != invitation.target.toString() && req.user._id.toString() != invitation.sender.toString())
             return res.status(400).json({
                 errors: [
-                    "You are not target of this invitation so you cannot reject it. Nice try doe"]
+                    "You are not a target nor sender of this invitation so you cannot reject it. Nice try doe"]
             });
-
-        //Remove invitation from recived invitations list
-        req.user.invitations = req.user.invitations.filter((id) => {
-            return id.toString() != invitation._id.toString();
-        });
-
-        //Save changes
-        await req.user.save(opt);
 
         //Remove invitation
         //TODO: remove() should cascade then any relaction to object will be removed as well
         await invitation.remove(opt);
 
         await session.commitTransaction();
+
         //TODO: thing about i18n, maybe passing lang param will do the trick
         return res.status(200).send("Invitation rejected successfully");
-
-    } catch (error) {
-        console.error(error);
-        await session.abortTransaction();
-        session.endSession();
-        next(error)
-    }
-
-});
-
-router.post("/cancel", isLoggedIn, async (req, res) => {
-    const session = await mongoose.startSession();
-    const opt = { session };
-    try {
-        session.startTransaction();
-        const invitation = await InvitationModel.findOne({ _id: req.body.id }).exec();
-
-        if (!invitation)
-            return res.status(400).json({ errors: ["No invitation found"] })
-
-        //Check if user is sender of this invitation
-        if (req.user._id != invitation.sender.toString())
-            return res.status(400).json({
-                errors: [
-                    "You are not sender of this invitation so you cannot cancel it. Nice try doe"]
-            });
-
-        const target = await UserModel.findById(invitation.target).select('+invitations').exec();
-
-        //Remove invitation from recived invitations list
-        target.invitations = target.invitations.filter((id) => {
-            return id.toString() != invitation._id.toString();
-        });
-
-        //Save changes
-        await target.save(opt);
-
-        //Remove invitation
-        await invitation.remove(opt);
-
-        await session.commitTransaction();
-        return res.status(200).send("Invitation cancel successfully");
 
     } catch (error) {
         console.error(error);
