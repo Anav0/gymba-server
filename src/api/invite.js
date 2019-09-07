@@ -79,6 +79,19 @@ router.get("/:id", isLoggedIn, async (req, res) => {
     }
 });
 
+router.get("/involves/:userId?", isLoggedIn, async (req, res) => {
+    try {
+        let invites = await InvitationModel.find({ $and: [{ sender: req.params.userId }, { target: req.user._id }] }).populate(!req.params.populate ? '' : req.params.populate, getUserModelPublicInfo()).exec();
+        invites.push(...await InvitationModel.find({ $and: [{ sender: req.user._id }, { target: req.params.userId }] }).populate(!req.params.populate ? '' : req.params.populate, getUserModelPublicInfo()).exec());
+        if (!invites)
+            return res.status(200).json({ errors: ["No invitations found"] });
+        return res.status(200).json(invites ? invites[0] : {});
+    } catch (error) {
+        console.error(error);
+        next(error)
+    }
+});
+
 router.post("/accept", isLoggedIn, async (req, res) => {
     const session = await mongoose.startSession();
     const opt = { session };
