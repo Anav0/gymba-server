@@ -56,9 +56,9 @@ export const setupInviteEndpoints = (app, mongoose) => {
 
     });
 
-    app.get("/user/invite/:populate", isLoggedIn, async (req, res) => {
+    app.get("/user/invite/:populate?", isLoggedIn, async (req, res) => {
         try {
-            const invites = await InvitationModel.find({ sender: req.user._id }).populate(req.params.populate, getUserModelPublicInfo()).exec();
+            const invites = await InvitationModel.find({ sender: req.user._id }).populate(!req.params.populate ? '' : req.params.populate, getUserModelPublicInfo()).exec();
             return res.status(200).send(invites);
         } catch (err) {
             console.error(err);
@@ -66,9 +66,9 @@ export const setupInviteEndpoints = (app, mongoose) => {
         }
     });
 
-    app.get("/user/recived-invite/:populate", isLoggedIn, async (req, res) => {
+    app.get("/user/recived-invite/:populate?", isLoggedIn, async (req, res) => {
         try {
-            const invites = await InvitationModel.find({ target: req.user._id }).populate(req.params.populate, getUserModelPublicInfo()).exec();
+            const invites = await InvitationModel.find({ target: req.user._id }).populate(!req.params.populate ? '' : req.params.populate, getUserModelPublicInfo()).exec();
             return res.status(200).send(invites);
         } catch (err) {
             console.error(err);
@@ -78,7 +78,7 @@ export const setupInviteEndpoints = (app, mongoose) => {
 
     app.get("/user/invite/:id", isLoggedIn, async (req, res) => {
         try {
-            const invite = await InvitationModel.findOne({ $and: [{ _id: req.params.id }, { target: req.user._id }] }).populate(req.body.populate, getUserModelPublicInfo()).exec();
+            const invite = await InvitationModel.findOne({ $and: [{ _id: req.params.id }, { target: req.user._id }] }).populate(!req.params.populate ? '' : req.params.populate, getUserModelPublicInfo()).exec();
             if (!invite)
                 return res.status(200).send({ errors: ["No invitation found"] });
             return res.status(200).send(invite);

@@ -17,7 +17,32 @@ export const setupUserEndpoints = (app, mongoose) => {
 
         return res.status(400).json({ errors: ["You are not sign in"] })
     });
+    app.post("/user/remove-friend", async (req, res) => {
+        const session = await mongoose.startSession();
+        const opt = { session };
+        try {
+            session.startTransaction();
+            const friend = await UserModel.findById(req.body.id).exec();
 
+            if (!friend)
+                return res.status(400).json({ errors: ['No user with given id found'] })
+
+            req.user.friends = req.user.friends.filter(id => id != friend._id)
+            await req.user.save(opt)
+
+            friend.friends = friend.friends.filter(id => id != req.user._id)
+            await friend.save(opt)
+
+            return res.status(200).json(`${friend.fullname} is no longer your friend`)
+
+        } catch (err) {
+            console.error(err)
+            await session.abortTransaction();
+            session.endSession();
+            return res.status(400).json({ errors: [err.message] })
+        }
+
+    });
     app.post("/user", async (req, res, next) => {
         const session = await mongoose.startSession();
         const opt = { session };
