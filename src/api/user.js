@@ -41,7 +41,7 @@ router.post("/", async (req, res, next) => {
         await sendEmailVerification(user._id, user.email, token)
 
         await session.commitTransaction();
-        return res.status(201).send(user);
+        return res.status(201).json(user);
 
     } catch (error) {
         console.error(error);
@@ -53,7 +53,7 @@ router.post("/", async (req, res, next) => {
 
 router.patch("/", isLoggedIn, async (req, res) => {
     if (req.isUnauthenticated())
-        return res.status(403).send({
+        return res.status(403).json({
             errors: ["You are not authorized"]
         });
     try {
@@ -64,7 +64,7 @@ router.patch("/", isLoggedIn, async (req, res) => {
 
         const user = await user.save();
 
-        return res.status(200).send(user);
+        return res.status(200).json(user);
 
     } catch (error) {
         console.error(error);
@@ -107,10 +107,10 @@ router.get("/suggested-friends", isLoggedIn, async (req, res) => {
         ids.push(...invitations.map(invite => invite.sender))
         console.log(ids)
         const users = await UserModel.find({ $and: [{ _id: { $ne: req.user._id } }, { _id: { $nin: ids } }, { _id: { $nin: req.user.friends } }] }, getUserModelPublicInfo()).exec();
-        return res.status(200).send(users);
+        return res.status(200).json(users);
     } catch (error) {
         console.error(error);
-       next(error)
+        next(error)
     }
 });
 
