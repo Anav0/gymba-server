@@ -52,7 +52,7 @@ router.get("/verify/:id/:token", async (req, res) => {
 
     } catch (error) {
         console.error(error)
-        return res.status(400).send(error);
+        next(error)
     }
 
 });
@@ -90,7 +90,7 @@ router.post("/resend-email", async (req, res) => {
 
     } catch (error) {
         console.error(error)
-        return res.status(400).send(error);
+        next(error)
     }
 
 });

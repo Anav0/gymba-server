@@ -51,7 +51,7 @@ router.post("/", isLoggedIn, async (req, res) => {
         console.error(error);
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).send(error);
+        next(error)
     }
 
 });
@@ -62,7 +62,7 @@ router.get("/:populate?", isLoggedIn, async (req, res) => {
         return res.status(200).send(invites);
     } catch (error) {
         console.error(error);
-        return res.status(400).send(error);
+        next(error)
     }
 });
 
@@ -74,7 +74,7 @@ router.get("/:id", isLoggedIn, async (req, res) => {
         return res.status(200).send(invite);
     } catch (error) {
         console.error(error);
-        return res.status(400).send(error);
+        next(error)
     }
 });
 
@@ -139,7 +139,7 @@ router.post("/accept", isLoggedIn, async (req, res) => {
         console.error(error);
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).send(error);
+        next(error)
     }
 
 });
@@ -182,7 +182,7 @@ router.post("/reject", isLoggedIn, async (req, res) => {
         console.error(error);
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).send(error);
+        next(error)
     }
 
 });
@@ -224,7 +224,7 @@ router.post("/cancel", isLoggedIn, async (req, res) => {
         console.error(error);
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).send(error);
+        next(error)
     }
 
 });
@@ -235,7 +235,7 @@ router.get("/recived/:populate?", isLoggedIn, async (req, res) => {
         return res.status(200).send(invites);
     } catch (error) {
         console.error(error);
-        return res.status(400).send(error);
+        next(error)
     }
 });
 

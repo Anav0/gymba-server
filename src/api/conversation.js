@@ -9,7 +9,7 @@ router.get("/", isLoggedIn, async (req, res) => {
         return res.status(200).send(conversations);
     } catch (error) {
         console.error(error);
-        return res.status(400).send(error);
+        next(error)
     }
 });
 
@@ -22,7 +22,7 @@ router.get("/participant/:partId/:numberOfPart?", isLoggedIn, async (req, res) =
         return res.status(200).send(conversations);
     } catch (error) {
         console.error(error);
-        return res.status(400).send(error);
+        next(error)
     }
 });
 
@@ -32,7 +32,7 @@ router.get("/:id", isLoggedIn, async (req, res) => {
         return res.status(200).send(conversation);
     } catch (error) {
         console.error(error);
-        return res.status(400).send(error);
+        next(error)
     }
 });
 
@@ -59,7 +59,7 @@ router.get("/:id/messages", isLoggedIn, async (req, res) => {
         return res.status(200).send(messages);
     } catch (error) {
         console.error(error);
-        return res.status(400).send(error);
+        next(error)
     }
 });
 
