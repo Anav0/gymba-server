@@ -9,6 +9,7 @@ import moment from "moment";
 import * as sendgrid from "../service/sendgrid";
 import session from "express-session";
 import settings from "../settings";
+import userEndpoints from "./user";
 import usersEndpoints from "./users";
 import authEndpoints from "./auth";
 import inviteEndpoints from "./invite";
@@ -44,6 +45,7 @@ app.use(bodyParser.json());
 app.use(multer().array());
 app.use(passport.initialize());
 app.use(passport.session());
+app.use("/user", userEndpoints)
 app.use("/users", usersEndpoints)
 app.use("/auth", authEndpoints)
 app.use("/invite", inviteEndpoints)

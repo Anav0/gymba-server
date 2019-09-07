@@ -3,113 +3,117 @@ import settings from "../settings";
 import moment from "moment";
 import { UserModel, getUserModelPublicInfo, InvitationModel } from "../schemas";
 import { sendEmailVerification, isLoggedIn } from "../api"
+import express from 'express';
+const router = express.Router();
 
-export const setupUserEndpoints = (app, mongoose) => {
-
-    app.get("/user", async (req, res) => {
-        if (req.user) {
-            try {
-                return res.status(200).json(req.user)
-            } catch (err) {
-                return res.status(400).json({ errors: [err.message] })
-            }
-        }
-
-        return res.status(400).json({ errors: ["You are not sign in"] })
-    });
-    app.post("/user/remove-friend", async (req, res) => {
-        const session = await mongoose.startSession();
-        const opt = { session };
+router.get("/", async (req, res) => {
+    if (req.user) {
         try {
-            session.startTransaction();
-            const friend = await UserModel.findById(req.body.id).exec();
-
-            if (!friend)
-                return res.status(400).json({ errors: ['No user with given id found'] })
-
-            req.user.friends = req.user.friends.filter(id => id != friend._id)
-            await req.user.save(opt)
-
-            friend.friends = friend.friends.filter(id => id != req.user._id)
-            await friend.save(opt)
-
-            return res.status(200).json(`${friend.fullname} is no longer your friend`)
-
+            return res.status(200).json(req.user)
         } catch (err) {
-            console.error(err)
-            await session.abortTransaction();
-            session.endSession();
             return res.status(400).json({ errors: [err.message] })
         }
+    }
 
-    });
-    app.post("/user", async (req, res, next) => {
-        const session = await mongoose.startSession();
-        const opt = { session };
-        try {
-            session.startTransaction();
+    return res.status(400).json({ errors: ["You are not sign in"] })
+});
 
-            let user = new UserModel(req.body);
+router.post("/", async (req, res, next) => {
+    const session = await mongoose.startSession();
+    const opt = { session };
+    try {
+        session.startTransaction();
 
-            //Generate random guid
-            const token = uuidv4();
+        let user = new UserModel(req.body);
 
-            user.emailVerificationToken = token;
-            user.emailVerificationSendDate = + Date.now();
-            user.isEmailVerified = false;
-            user.creationDate = + Date.now();
-            user.expireAt = moment(Date.now()).add(settings.user.validFor, settings.user.unit).valueOf();
+        //Generate random guid
+        const token = uuidv4();
 
-            //Save user here to get request data validation
-            user = await user.save(opt);
+        user.emailVerificationToken = token;
+        user.emailVerificationSendDate = + Date.now();
+        user.isEmailVerified = false;
+        user.creationDate = + Date.now();
+        user.expireAt = moment(Date.now()).add(settings.user.validFor, settings.user.unit).valueOf();
 
-            await sendEmailVerification(user._id, user.email, token)
+        //Save user here to get request data validation
+        user = await user.save(opt);
 
-            await session.commitTransaction();
-            return res.status(201).send(user);
+        await sendEmailVerification(user._id, user.email, token)
 
-        } catch (err) {
-            console.error(err);
-            await session.abortTransaction();
-            session.endSession();
-            return res.status(400).json(err)
-        }
-    });
+        await session.commitTransaction();
+        return res.status(201).send(user);
 
-    app.patch("/user", isLoggedIn, async (req, res) => {
-        if (req.isUnauthenticated())
-            return res.status(403).send({
-                errors: ["You are not authorized"]
-            });
-        try {
-            await UserModel.findOne({ _id: req.user._id }).exec();
+    } catch (err) {
+        console.error(err);
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json(err)
+    }
+});
 
-            //swap properties
-            Object.assign(user, req.body);
+router.patch("/", isLoggedIn, async (req, res) => {
+    if (req.isUnauthenticated())
+        return res.status(403).send({
+            errors: ["You are not authorized"]
+        });
+    try {
+        await UserModel.findOne({ _id: req.user._id }).exec();
 
-            const user = await user.save();
+        //swap properties
+        Object.assign(user, req.body);
 
-            return res.status(200).send(user);
+        const user = await user.save();
 
-        } catch (err) {
-            console.error(err);
-            return res.status(400).send(err)
-        }
-    });
+        return res.status(200).send(user);
 
-    app.get("/user/suggested-friends", isLoggedIn, async (req, res) => {
-        try {
-            const invitations = await InvitationModel.find({ $or: [{ sender: req.user._id }, { target: req.user._id }] }).exec();
-            console.log(invitations)
-            let ids = invitations.map(invite => invite.target)
-            ids.push(...invitations.map(invite => invite.sender))
-            console.log(ids)
-            const users = await UserModel.find({ $and: [{ _id: { $ne: req.user._id } }, { _id: { $nin: ids } }, { _id: { $nin: req.user.friends } }] }, getUserModelPublicInfo()).exec();
-            return res.status(200).send(users);
-        } catch (err) {
-            console.error(err);
-            return res.status(400).send(err);
-        }
-    });
-    //TODO: Add endpoint that will return user's favorite contacts
-}
+    } catch (err) {
+        console.error(err);
+        return res.status(400).send(err)
+    }
+});
+
+router.post("/remove-friend", async (req, res) => {
+    const session = await mongoose.startSession();
+    const opt = { session };
+    try {
+        session.startTransaction();
+        const friend = await UserModel.findById(req.body.id).exec();
+
+        if (!friend)
+            return res.status(400).json({ errors: ['No user with given id found'] })
+
+        req.user.friends = req.user.friends.filter(id => id != friend._id)
+        await req.user.save(opt)
+
+        friend.friends = friend.friends.filter(id => id != req.user._id)
+        await friend.save(opt)
+
+        return res.status(200).json(`${friend.fullname} is no longer your friend`)
+
+    } catch (err) {
+        console.error(err)
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ errors: [err.message] })
+    }
+
+});
+
+router.get("/suggested-friends", isLoggedIn, async (req, res) => {
+    try {
+        const invitations = await InvitationModel.find({ $or: [{ sender: req.user._id }, { target: req.user._id }] }).exec();
+        console.log(invitations)
+        let ids = invitations.map(invite => invite.target)
+        ids.push(...invitations.map(invite => invite.sender))
+        console.log(ids)
+        const users = await UserModel.find({ $and: [{ _id: { $ne: req.user._id } }, { _id: { $nin: ids } }, { _id: { $nin: req.user.friends } }] }, getUserModelPublicInfo()).exec();
+        return res.status(200).send(users);
+    } catch (err) {
+        console.error(err);
+        return res.status(400).send(err);
+    }
+});
+
+//TODO: Add endpoint that will return user's favorite contacts
+
+export default router;
