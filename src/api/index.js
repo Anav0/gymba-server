@@ -13,6 +13,7 @@ import userEndpoints from "./user";
 import usersEndpoints from "./users";
 import authEndpoints from "./auth";
 import inviteEndpoints from "./invite";
+import conversationEndpoints from "./conversation";
 import mongoose from "mongoose"
 import express from 'express';
 const app = express();
@@ -49,6 +50,7 @@ app.use("/user", userEndpoints)
 app.use("/users", usersEndpoints)
 app.use("/auth", authEndpoints)
 app.use("/invite", inviteEndpoints)
+app.use("/conversation", conversationEndpoints)
 
 try {
     UserModel.createCollection();
