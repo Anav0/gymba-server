@@ -7,9 +7,9 @@ router.get("/", isLoggedIn, async (req, res) => {
     try {
         const conversations = await ConversationModel.find({ participants: req.user._id }).exec();
         return res.status(200).send(conversations);
-    } catch (err) {
-        console.error(err);
-        return res.status(400).send(err);
+    } catch (error) {
+        console.error(error);
+        return res.status(400).send(error);
     }
 });
 
@@ -20,9 +20,9 @@ router.get("/participant/:partId/:numberOfPart?", isLoggedIn, async (req, res) =
             conversations = await ConversationModel.find({ $and: [{ participants: req.user._id }, { participants: req.params.partId }, { participants: { $size: req.params.numberOfPart } }] }).exec();
         else conversations = await ConversationModel.find({ $and: [{ participants: req.user._id }, { participants: req.params.partId }] }).exec();
         return res.status(200).send(conversations);
-    } catch (err) {
-        console.error(err);
-        return res.status(400).send(err);
+    } catch (error) {
+        console.error(error);
+        return res.status(400).send(error);
     }
 });
 
@@ -30,9 +30,9 @@ router.get("/:id", isLoggedIn, async (req, res) => {
     try {
         const conversation = await ConversationModel.findOne({ $and: [{ _id: req.params.id }, { participants: req.user._id }] }).populate('participants', getUserModelPublicInfo()).exec();
         return res.status(200).send(conversation);
-    } catch (err) {
-        console.error(err);
-        return res.status(400).send(err);
+    } catch (error) {
+        console.error(error);
+        return res.status(400).send(error);
     }
 });
 
@@ -57,9 +57,9 @@ router.get("/:id/messages", isLoggedIn, async (req, res) => {
             messages = await MessageModel.find({}).populate('sender', getUserModelPublicInfo()).exec()
 
         return res.status(200).send(messages);
-    } catch (err) {
-        console.error(err);
-        return res.status(400).send(err);
+    } catch (error) {
+        console.error(error);
+        return res.status(400).send(error);
     }
 });
 

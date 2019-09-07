@@ -4,11 +4,11 @@ import express from "express";
 const router = express.Router();
 
 router.post('/login', (req, res, next) => {
-    passport.authenticate('local', (err, user, info) => {
-        if (err) { return next(err); }
+    passport.authenticate('local', (error, user, info) => {
+        if (error) { return next(error); }
         if (!user) { return res.status(400).send(info); }
-        req.logIn(user, (err) => {
-            if (err) { return next(err); }
+        req.logIn(user, (error) => {
+            if (error) { return next(error); }
             let responce = {
                 user: user,
                 session: req.session
@@ -50,9 +50,9 @@ router.get("/verify/:id/:token", async (req, res) => {
         await user.save();
         return res.status(200).send("Email verified");
 
-    } catch (err) {
-        console.error(err)
-        return res.status(400).send(err);
+    } catch (error) {
+        console.error(error)
+        return res.status(400).send(error);
     }
 
 });
@@ -88,9 +88,9 @@ router.post("/resend-email", async (req, res) => {
         await user.save();
         return res.status(200).send("Email verification send");
 
-    } catch (err) {
-        console.error(err)
-        return res.status(400).send(err);
+    } catch (error) {
+        console.error(error)
+        return res.status(400).send(error);
     }
 
 });

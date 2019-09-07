@@ -10,8 +10,8 @@ router.get("/", async (req, res) => {
     if (req.user) {
         try {
             return res.status(200).json(req.user)
-        } catch (err) {
-            return res.status(400).json({ errors: [err.message] })
+        } catch (error) {
+            return res.status(400).json({ errors: [error.message] })
         }
     }
 
@@ -43,11 +43,11 @@ router.post("/", async (req, res, next) => {
         await session.commitTransaction();
         return res.status(201).send(user);
 
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        console.error(error);
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).json(err)
+        return res.status(400).json(error)
     }
 });
 
@@ -66,9 +66,9 @@ router.patch("/", isLoggedIn, async (req, res) => {
 
         return res.status(200).send(user);
 
-    } catch (err) {
-        console.error(err);
-        return res.status(400).send(err)
+    } catch (error) {
+        console.error(error);
+        return res.status(400).send(error)
     }
 });
 
@@ -90,11 +90,11 @@ router.post("/remove-friend", async (req, res) => {
 
         return res.status(200).json(`${friend.fullname} is no longer your friend`)
 
-    } catch (err) {
-        console.error(err)
+    } catch (error) {
+        console.error(error)
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).json({ errors: [err.message] })
+        return res.status(400).json({ errors: [error.message] })
     }
 
 });
@@ -108,9 +108,9 @@ router.get("/suggested-friends", isLoggedIn, async (req, res) => {
         console.log(ids)
         const users = await UserModel.find({ $and: [{ _id: { $ne: req.user._id } }, { _id: { $nin: ids } }, { _id: { $nin: req.user.friends } }] }, getUserModelPublicInfo()).exec();
         return res.status(200).send(users);
-    } catch (err) {
-        console.error(err);
-        return res.status(400).send(err);
+    } catch (error) {
+        console.error(error);
+        return res.status(400).send(error);
     }
 });
 

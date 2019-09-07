@@ -61,8 +61,8 @@ try {
     MessageModel.createCollection();
     InvitationModel.createCollection();
 
-} catch (err) {
-    console.error(err)
+} catch (error) {
+    console.error(error)
 }
 console.log("Done!")
 

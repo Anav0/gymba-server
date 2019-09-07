@@ -6,12 +6,12 @@ const server = require("http").Server(app);
 try {
   mongoose.connect(`${process.env.MONGO_CONNECTION_STRING}`,
     { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true },
-    err => {
-      if (err) console.error(err);
+    error => {
+      if (error) console.error(error);
     }
   );
 
   server.listen(3000);
-} catch (err) {
-  console.error(err)
+} catch (error) {
+  console.error(error)
 }

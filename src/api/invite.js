@@ -47,11 +47,11 @@ router.post("/", isLoggedIn, async (req, res) => {
         await session.commitTransaction();
         return res.status(200).send(invitation);
 
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        console.error(error);
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).send(err);
+        return res.status(400).send(error);
     }
 
 });
@@ -60,9 +60,9 @@ router.get("/:populate?", isLoggedIn, async (req, res) => {
     try {
         const invites = await InvitationModel.find({ sender: req.user._id }).populate(!req.params.populate ? '' : req.params.populate, getUserModelPublicInfo()).exec();
         return res.status(200).send(invites);
-    } catch (err) {
-        console.error(err);
-        return res.status(400).send(err);
+    } catch (error) {
+        console.error(error);
+        return res.status(400).send(error);
     }
 });
 
@@ -72,9 +72,9 @@ router.get("/:id", isLoggedIn, async (req, res) => {
         if (!invite)
             return res.status(200).send({ errors: ["No invitation found"] });
         return res.status(200).send(invite);
-    } catch (err) {
-        console.error(err);
-        return res.status(400).send(err);
+    } catch (error) {
+        console.error(error);
+        return res.status(400).send(error);
     }
 });
 
@@ -135,11 +135,11 @@ router.post("/accept", isLoggedIn, async (req, res) => {
         await session.commitTransaction();
         return res.status(200).send({ errors: ["Invitation accepted"] });
 
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        console.error(error);
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).send(err);
+        return res.status(400).send(error);
     }
 
 });
@@ -178,11 +178,11 @@ router.post("/reject", isLoggedIn, async (req, res) => {
         //TODO: thing about i18n, maybe passing lang param will do the trick
         return res.status(200).send("Invitation rejected successfully");
 
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        console.error(error);
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).send(err);
+        return res.status(400).send(error);
     }
 
 });
@@ -220,11 +220,11 @@ router.post("/cancel", isLoggedIn, async (req, res) => {
         await session.commitTransaction();
         return res.status(200).send("Invitation cancel successfully");
 
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        console.error(error);
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).send(err);
+        return res.status(400).send(error);
     }
 
 });
@@ -233,9 +233,9 @@ router.get("/recived/:populate?", isLoggedIn, async (req, res) => {
     try {
         const invites = await InvitationModel.find({ target: req.user._id }).populate(!req.params.populate ? '' : req.params.populate, getUserModelPublicInfo()).exec();
         return res.status(200).send(invites);
-    } catch (err) {
-        console.error(err);
-        return res.status(400).send(err);
+    } catch (error) {
+        console.error(error);
+        return res.status(400).send(error);
     }
 });
 

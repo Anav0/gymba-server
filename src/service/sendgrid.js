@@ -19,8 +19,8 @@ export function sendMessage(to, from, subject, text, html) {
       const sendResults = await sender.send(msg, false);
       resolve(sendResults);
     }
-    catch (err) {
-      reject(err);
+    catch (error) {
+      reject(error);
     }
   });
 }

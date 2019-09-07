@@ -92,12 +92,12 @@ User.pre("save", function (next) {
   //TODO: if password gets changed logut out user from all devices
 
   //generate a salt
-  bcrypt.genSalt((err, salt) => {
-    if (err) return next(err);
+  bcrypt.genSalt((error, salt) => {
+    if (error) return next(error);
 
     //hash the password
-    bcrypt.hash(user.password, salt, (err, hash) => {
-      if (err) return next(err);
+    bcrypt.hash(user.password, salt, (error, hash) => {
+      if (error) return next(error);
 
       //override the cleartext password with the hashed one
       user.password = hash;
@@ -109,8 +109,8 @@ User.pre("save", function (next) {
 });
 //WARNING!!! do not change to arrow function, reason above
 User.methods.comparePassword = function (candidatePassword, callback) {
-  bcrypt.compare(candidatePassword, this.password, (err, isMatch) => {
-    if (err) return callback(err);
+  bcrypt.compare(candidatePassword, this.password, (error, isMatch) => {
+    if (error) return callback(error);
     callback(null, isMatch);
   });
 };

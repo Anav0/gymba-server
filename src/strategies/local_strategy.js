@@ -6,9 +6,9 @@ passport.use(
   new Strategy((username, password, done) => {
     username = username.trim();
     password = password.trim();
-    UserModel.findOne({ username: username }, (err, user) => {
-      if (err) {
-        return done(err);
+    UserModel.findOne({ username: username }, (error, user) => {
+      if (error) {
+        return done(error);
       }
       if (!user) {
         return done(null, false, { errors: ["Wrong username or password."] });
@@ -18,8 +18,8 @@ passport.use(
           errors: ["Email is not verified."]
         });
 
-      user.comparePassword(password, (err, isMatch) => {
-        if (err) return done(err);
+      user.comparePassword(password, (error, isMatch) => {
+        if (error) return done(error);
 
         if (!isMatch)
           return done(null, false, { errors: ["Wrong username or password."] });
@@ -35,7 +35,7 @@ passport.serializeUser((user, done) => {
 });
 
 passport.deserializeUser((id, done) => {
-  UserModel.findById(id, (err, user) => {
-    done(err, user);
+  UserModel.findById(id, (error, user) => {
+    done(error, user);
   });
 });
