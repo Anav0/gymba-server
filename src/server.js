@@ -1,7 +1,7 @@
 require("dotenv").config();
+import mongoose from "mongoose";
 import app from "./api";
 const server = require("http").Server(app);
-import mongoose from "mongoose";
 
 try {
   mongoose.connect(`${process.env.MONGO_CONNECTION_STRING}`,

@@ -11,6 +11,7 @@ import session from "express-session";
 import settings from "../settings";
 import usersEndpoints from "./users";
 import authEndpoints from "./auth";
+import inviteEndpoints from "./invite";
 import mongoose from "mongoose"
 import express from 'express';
 const app = express();
@@ -45,6 +46,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.use("/users", usersEndpoints)
 app.use("/auth", authEndpoints)
+app.use("/invite", inviteEndpoints)
 
 try {
     UserModel.createCollection();
