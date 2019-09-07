@@ -9,62 +9,54 @@ import moment from "moment";
 import * as sendgrid from "../service/sendgrid";
 import session from "express-session";
 import settings from "../settings";
-import { setupConversationEndpoints } from "./conversation";
-import { setupInviteEndpoints } from "./invite";
-import { setupLoginEndpoints } from "./login";
-import { setupUserEndpoints } from "./user";
-import { setupUsersEndpoints } from "./users";
-import { setupVerificationEndpoints } from "./verification";
+import usersEndpoints from "./users";
+import authEndpoints from "./auth";
+import mongoose from "mongoose"
+import express from 'express';
+const app = express();
 
 //TODO: Add  friendships table to DB to store information about friendships duration, etc etc.
-export const initializeApi = async (app, mongoose) => {
-    console.log("Initializing API...")
+console.log("Initializing API...")
+app.use(cors({
+    origin: true,
+    credentials: true,
+}));
 
-    app.use(cors({
-        origin: true,
-        credentials: true,
-    }));
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET,
+        //don't save session if unmodified
+        resave: false,
+        saveUninitialized: false,
+        cookie: { httpOnly: false, expires: new Date(moment().add(settings.cookies.validFor, settings.cookies.unit)) },
+        store: new MongoStore({ mongooseConnection: mongoose.connection })
+    })
+);
 
-    app.use(
-        session({
-            secret: process.env.SESSION_SECRET,
-            //don't save session if unmodified
-            resave: false,
-            saveUninitialized: false,
-            cookie: { httpOnly: false, expires: new Date(moment().add(settings.cookies.validFor, settings.cookies.unit)) },
-            store: new MongoStore({ mongooseConnection: mongoose.connection })
-        })
-    );
+//for parsing application/xwww...
+app.use(bodyParser.urlencoded({ extended: true }));
 
-    //for parsing application/xwww...
-    app.use(bodyParser.urlencoded({ extended: true }));
+//for parsing json
+app.use(bodyParser.json());
 
-    //for parsing json
-    app.use(bodyParser.json());
+// for parsing multipart/form-data
+app.use(multer().array());
+app.use(passport.initialize());
+app.use(passport.session());
+app.use("/users", usersEndpoints)
+app.use("/auth", authEndpoints)
 
-    // for parsing multipart/form-data
-    app.use(multer().array());
-    app.use(passport.initialize());
-    app.use(passport.session());
+try {
+    UserModel.createCollection();
+    ConversationModel.createCollection();
+    MessageModel.createCollection();
+    InvitationModel.createCollection();
 
-    try {
-        await UserModel.createCollection();
-        await ConversationModel.createCollection();
-        await MessageModel.createCollection();
-        await InvitationModel.createCollection();
-
-        setupConversationEndpoints(app)
-        setupInviteEndpoints(app, mongoose)
-        setupLoginEndpoints(app)
-        setupUserEndpoints(app, mongoose)
-        setupUsersEndpoints(app)
-        setupVerificationEndpoints(app)
-
-    } catch (err) {
-        console.error(err)
-    }
-    console.log("Done!")
+} catch (err) {
+    console.error(err)
 }
+console.log("Done!")
+
 
 export function isLoggedIn(req, res, next) {
     if (req.user) return next();
@@ -85,5 +77,6 @@ export function sendEmailVerification(userId, email, token) {
         "Chat account verification",
         `${messageOne} ${verificationLink} ${messageTwo}`,
         `<p> ${messageOne} ${htmlLink} ${messageTwo} </p>`)
-
 }
+
+export default app;
