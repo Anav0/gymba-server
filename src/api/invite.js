@@ -5,7 +5,7 @@ import express from 'express';
 import mongoose from "mongoose";
 const router = express.Router();
 
-router.post("/", isLoggedIn, async (req, res) => {
+router.post("/", isLoggedIn, async (req, res, next) => {
     const session = await mongoose.startSession();
     const opt = { session };
     try {
@@ -57,7 +57,7 @@ router.post("/", isLoggedIn, async (req, res) => {
 
 });
 
-router.get("/:populate?", isLoggedIn, async (req, res) => {
+router.get("/:populate?", isLoggedIn, async (req, res, next) => {
     try {
         const invites = await InvitationModel.find({ sender: req.user._id }).populate(!req.params.populate ? '' : req.params.populate, getUserModelPublicInfo()).exec();
         return res.status(200).json(invites);
@@ -67,7 +67,7 @@ router.get("/:populate?", isLoggedIn, async (req, res) => {
     }
 });
 
-router.get("/:id", isLoggedIn, async (req, res) => {
+router.get("/:id", isLoggedIn, async (req, res, next) => {
     try {
         const invite = await InvitationModel.findOne({ $and: [{ _id: req.params.id }, { target: req.user._id }] }).populate(!req.params.populate ? '' : req.params.populate, getUserModelPublicInfo()).exec();
         if (!invite)
@@ -79,7 +79,7 @@ router.get("/:id", isLoggedIn, async (req, res) => {
     }
 });
 
-router.get("/involves/:userId?", isLoggedIn, async (req, res) => {
+router.get("/involves/:userId?", isLoggedIn, async (req, res, next) => {
     try {
         let invites = await InvitationModel.find({ $and: [{ sender: req.params.userId }, { target: req.user._id }] }).populate(!req.params.populate ? '' : req.params.populate, getUserModelPublicInfo()).exec();
         invites.push(...await InvitationModel.find({ $and: [{ sender: req.user._id }, { target: req.params.userId }] }).populate(!req.params.populate ? '' : req.params.populate, getUserModelPublicInfo()).exec());
@@ -92,7 +92,7 @@ router.get("/involves/:userId?", isLoggedIn, async (req, res) => {
     }
 });
 
-router.post("/accept", isLoggedIn, async (req, res) => {
+router.post("/accept", isLoggedIn, async (req, res, next) => {
     const session = await mongoose.startSession();
     const opt = { session };
     try {
@@ -155,7 +155,7 @@ router.post("/accept", isLoggedIn, async (req, res) => {
 
 });
 
-router.post("/reject", isLoggedIn, async (req, res) => {
+router.post("/reject", isLoggedIn, async (req, res, next) => {
     //TODO: think about making transaction middleware
     const session = await mongoose.startSession();
     const opt = { session };
