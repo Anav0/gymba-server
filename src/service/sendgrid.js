@@ -8,10 +8,11 @@ export function sendMessage(to, from, subject, text, html) {
   return new Promise(async (resolve, reject) => {
     try {
       const msg = {
-        to: to,
-        from: from,
-        subject: subject,
-        text: text,
+        to,
+        from,
+        subject,
+        text,
+        html
       };
       // if (isDevMode) {
       //   resolve("Email was not send becouse you are in dev mode")
