@@ -1,8 +1,10 @@
 require("dotenv").config();
 import mongoose from "mongoose";
 import app from "./api";
-const server = require("http").Server(app);
+import { initializeSocket } from "../src/service/socket";
 
+const server = require("http").Server(app);
+initializeSocket(server)
 try {
   mongoose.connect(`${process.env.MONGO_CONNECTION_STRING}`,
     { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true },

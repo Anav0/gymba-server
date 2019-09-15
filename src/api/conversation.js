@@ -13,7 +13,18 @@ router.get("/", isLoggedIn, async (req, res) => {
     }
 });
 
-router.get("/participant/:partId/:numberOfPart?", isLoggedIn, async (req, res) => {
+router.get("/last-active", isLoggedIn, async (req, res, next) => {
+    try {
+        const conversations = await ConversationModel.find({ participants: req.user._id }).populate('participants', getUserModelPublicInfo()).exec();
+        if (conversations.length > 0)
+            return res.status(200).json(conversations[0]);
+        else throw new Error('There is no conversations')
+    } catch (error) {
+        next(error)
+    }
+});
+
+router.get("/participant/:partId/:numberOfPart?", isLoggedIn, async (req, res, next) => {
     try {
         let conversations = []
         if (req.params.numberOfPart)
@@ -26,7 +37,7 @@ router.get("/participant/:partId/:numberOfPart?", isLoggedIn, async (req, res) =
     }
 });
 
-router.get("/:id", isLoggedIn, async (req, res) => {
+router.get("/:id", isLoggedIn, async (req, res, next) => {
     try {
         const conversation = await ConversationModel.findOne({ $and: [{ _id: req.params.id }, { participants: req.user._id }] }).populate('participants', getUserModelPublicInfo()).exec();
         return res.status(200).json(conversation);
@@ -36,7 +47,7 @@ router.get("/:id", isLoggedIn, async (req, res) => {
     }
 });
 
-router.get("/:id/messages", isLoggedIn, async (req, res) => {
+router.get("/:id/messages", isLoggedIn, async (req, res, next) => {
     let startDate = new Date();
     let endDate = null;
     const conversationId = req.params.id;
@@ -51,16 +62,22 @@ router.get("/:id/messages", isLoggedIn, async (req, res) => {
         let messages = [];
         if (endDate)
             messages = await MessageModel.find({
-                $and: [{ _id: conversation.messages }, { sendDate: { $gte: startDate, $lte: endDate } }]
+                $and: [{ _id: { $in: conversation.messages } }, { sendDate: { $gte: startDate, $lte: endDate } }]
             }).populate('sender', getUserModelPublicInfo()).sort({ sendDate: 1 }).exec()
         else
-            messages = await MessageModel.find({}).populate('sender', getUserModelPublicInfo()).exec()
+            messages = await MessageModel.find({
+                _id: { $in: conversation.messages }
+            }).populate('sender', getUserModelPublicInfo()).sort({ sendDate: 1 }).exec()
 
+        console.log(messages)
         return res.status(200).json(messages);
     } catch (error) {
         console.error(error);
         next(error)
     }
 });
+
+
+
 
 export default router

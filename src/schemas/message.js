@@ -8,15 +8,19 @@ const Message = new Schema({
         required: true
     },
     conversationId: {
-        type: { type: Schema.Types.ObjectId, ref: 'Conversation' },
+        type: Schema.Types.ObjectId,
+        ref: 'Conversation',
+        required: true,
     },
     sender: {
-        type: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
     },
     status: {
         type: String,
+        enum: ['send', 'delivered', 'received'],
         required: true,
-        enum: ['send', 'delivered', 'received']
     },
     content: {
         type: String,
