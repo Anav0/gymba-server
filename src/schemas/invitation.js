@@ -22,7 +22,6 @@ const Invitation = new Schema({
 Invitation.pre('remove', async function (next) {
   try {
     const target = await UserModel.findById(this.target);
-    console.log(target.invitations)
     target.invitations = target.invitations.filter((inviteId) => inviteId.toString() != this._id.toString());
     await target.save();
     next()

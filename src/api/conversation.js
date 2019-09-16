@@ -77,7 +77,19 @@ router.get("/:id/messages", isLoggedIn, async (req, res, next) => {
     }
 });
 
+router.get("/:id/unread", isLoggedIn, async (req, res, next) => {
+    const conversationId = req.params.id;
+    try {
+        const conversation = await ConversationModel.findById(conversationId).exec();
+        if (!conversation)
+            throw new Error("No conversation with given id found");
 
-
+        const unreadMessages = await MessageModel.find({ $and: [{ status: "send" }, { sender: { $ne: req.user._id }, _id: { $in: conversation.messages } }] }).exec();
+        return res.status(200).json(unreadMessages);
+    }
+    catch (error) {
+        next(error);
+    }
+});
 
 export default router
