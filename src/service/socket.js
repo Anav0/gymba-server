@@ -9,9 +9,16 @@ export const initializeSocket = (server) => {
     chat.on('connection', (socket) => {
 
         socket.on('join', (data) => {
-            console.log(data)
             socket.join(data.roomId);
             socket.to(data.roomId).emit('user join room', `${data.username} join room`)
+        });
+
+        socket.on('is typing', data => {
+            socket.to(data.roomId).emit('user is typing', data.user)
+        });
+
+        socket.on('stoped typing', data => {
+            socket.to(data.roomId).emit('user stoped typing', data.user)
         });
 
         socket.on('private message', async (data) => {

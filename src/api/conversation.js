@@ -84,7 +84,7 @@ router.get("/:id/unread", isLoggedIn, async (req, res, next) => {
         if (!conversation)
             throw new Error("No conversation with given id found");
 
-        const unreadMessages = await MessageModel.find({ $and: [{ status: "send" }, { sender: { $ne: req.user._id }, _id: { $in: conversation.messages } }] }).exec();
+        const unreadMessages = await MessageModel.find({ $and: [{ status: "send" }, { sender: { $ne: req.user._id }, _id: { $in: conversation.messages } }] }).sort({ sendDate: 1 }).exec();
         return res.status(200).json(unreadMessages);
     }
     catch (error) {
