@@ -14,6 +14,7 @@ import usersEndpoints from "./users";
 import authEndpoints from "./auth";
 import inviteEndpoints from "./invite";
 import conversationEndpoints from "./conversation";
+import opinionEndpoints from "./opinion";
 import mongoose from "mongoose"
 import express from 'express';
 const app = express();
@@ -51,6 +52,7 @@ app.use("/users", usersEndpoints)
 app.use("/auth", authEndpoints)
 app.use("/invite", inviteEndpoints)
 app.use("/conversation", conversationEndpoints)
+app.use("/opinion", opinionEndpoints)
 app.use((error, req, res, next) => {
     return res.status(error.status || 500).json({ errors: [error.message] })
 })

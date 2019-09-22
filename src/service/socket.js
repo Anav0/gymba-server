@@ -25,6 +25,7 @@ export const initializeSocket = (server) => {
             const session = await mongoose.startSession();
             const opt = { session };
             try {
+                session.startTransaction();
                 const conversation = await ConversationModel.findById(data.conversationId).exec();
                 const sender = await UserModel.findById(data.userId).exec();
 
@@ -41,17 +42,16 @@ export const initializeSocket = (server) => {
                 })
 
                 message = await message.save(opt);
-
                 conversation.messages.push(message._id)
                 await conversation.save(opt);
 
                 await message.populate('sender').execPopulate();
+                await session.commitTransaction();
                 chat.to(data.roomId).emit('new message', message)
             } catch (error) {
-                console.error(error);
                 await session.abortTransaction();
                 session.endSession();
-                chat.to(data.roomId).emit('failed to send message', message)
+                chat.to(data.roomId).emit('failed to send message', { error: error, message: data.message })
             }
         });
 
