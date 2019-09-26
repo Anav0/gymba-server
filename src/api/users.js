@@ -3,7 +3,7 @@ import express from 'express';
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
     try {
         const users = await UserModel.find({}, getUserModelPublicInfo()).populate(req.body.populate, getUserModelPublicInfo()).exec();
         return res.status(200).json(users);
@@ -13,7 +13,7 @@ router.get("/", async (req, res) => {
     }
 });
 
-router.get("/:id", async (req, res) => {
+router.get("/:id", async (req, res, next) => {
     try {
         const user = await UserModel.findOne({ _id: req.params.id }, getUserModelPublicInfo()).exec();
         return res.status(200).json(user);

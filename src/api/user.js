@@ -73,7 +73,7 @@ router.patch("/", isLoggedIn, async (req, res) => {
     }
 });
 
-router.post("/remove-friend", async (req, res) => {
+router.post("/remove-friend", isLoggedIn, async (req, res) => {
     const session = await mongoose.startSession();
     const opt = { session };
     try {
@@ -83,12 +83,13 @@ router.post("/remove-friend", async (req, res) => {
         if (!friend)
             return res.status(400).json({ errors: ['No user with given id found'] })
 
-        req.user.friends = req.user.friends.filter(id => id != friend._id)
+        req.user.friends = req.user.friends.filter(id => id.toString() != friend._id.toString())
         await req.user.save(opt)
 
-        friend.friends = friend.friends.filter(id => id != req.user._id)
+        friend.friends = friend.friends.filter(id => id.toString() != req.user._id.toString())
         await friend.save(opt)
 
+        session.commitTransaction();
         return res.status(200).json(`${friend.fullname} is no longer your friend`)
 
     } catch (error) {

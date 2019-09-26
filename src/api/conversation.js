@@ -18,7 +18,7 @@ router.get("/last-active", isLoggedIn, async (req, res, next) => {
         const conversations = await ConversationModel.find({ participants: req.user._id }).populate('participants', getUserModelPublicInfo()).exec();
         if (conversations.length > 0)
             return res.status(200).json(conversations[0]);
-        else throw new Error('There is no conversations')
+        else res.status(200).json({});
     } catch (error) {
         next(error)
     }
