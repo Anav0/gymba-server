@@ -7,16 +7,15 @@ import express from 'express';
 import mongoose from "mongoose";
 const router = express.Router();
 
-router.get("/", async (req, res) => {
+router.get("/", async (req, res, next) => {
     if (req.user) {
         try {
             return res.status(200).json(req.user)
         } catch (error) {
-            return res.status(400).json({ errors: [error.message] })
+            next(error)
         }
     }
-
-    return res.status(400).json({ errors: ["You are not sign in"] })
+    throw Error('You are not authenticated');
 });
 
 router.post("/", async (req, res, next) => {
@@ -48,28 +47,23 @@ router.post("/", async (req, res, next) => {
         console.error(error);
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).json(error)
+        next(error)
     }
 });
 
-router.patch("/", isLoggedIn, async (req, res) => {
-    if (req.isUnauthenticated())
-        return res.status(403).json({
-            errors: ["You are not authorized"]
-        });
+router.patch("/", isLoggedIn, async (req, res, next) => {
     try {
-        await UserModel.findOne({ _id: req.user._id }).exec();
 
         //swap properties
-        Object.assign(user, req.body);
+        Object.assign(req.user, req.body);
 
-        const user = await user.save();
+        const user = await req.user.save();
 
-        return res.status(200).json(user);
+        return res.status(200).json(req.user);
 
     } catch (error) {
         console.error(error);
-        return res.status(400).json(error)
+        next(error)
     }
 });
 
@@ -96,7 +90,7 @@ router.post("/remove-friend", isLoggedIn, async (req, res) => {
         console.error(error)
         await session.abortTransaction();
         session.endSession();
-        return res.status(400).json({ errors: [error.message] })
+        next(error)
     }
 
 });
