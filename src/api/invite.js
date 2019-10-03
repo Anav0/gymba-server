@@ -4,6 +4,7 @@ import uuidv4 from "uuid/v4";
 import express from 'express';
 import mongoose from "mongoose";
 const router = express.Router();
+import chat from "../service/socket";
 
 router.post("/", isLoggedIn, async (req, res, next) => {
     const session = await mongoose.startSession();
@@ -15,12 +16,12 @@ router.post("/", isLoggedIn, async (req, res, next) => {
 
         //Check if user and target are not the same
         if (userId == targetId)
-            return res.status(400).json({ errors: ["You cannot befriend yourself"] });
+            throw new Error('You cannot befriend yourself')
 
         //Check if targetId is not already our friend
         for (const friendId of req.user.friends) {
             if (friendId == targetId)
-                return res.status(400).json({ errors: ["You are already friends"] });
+                throw new Error('You are already friends')
         }
 
         //Check if invitation already exists
@@ -31,7 +32,7 @@ router.post("/", isLoggedIn, async (req, res, next) => {
         ).exec();
 
         if (results.length > 0)
-            return res.status(400).json({ errors: ["Invitation was already send"] });
+            throw new Error('Invitation was already send')
 
         const invitation = await new InvitationModel({
             date: + Date.now(),
@@ -100,23 +101,17 @@ router.post("/accept", isLoggedIn, async (req, res, next) => {
         const invitation = await InvitationModel.findOne({ _id: req.body.id }).exec();
 
         if (!invitation)
-            return res.status(400).json({
-                errors:
-                    ["No invitation found"]
-            });
+            throw new Error('No invitation found');
 
         //Check if user is target of this invitation
         if (req.user._id != invitation.target.toString())
-            return res.status(400).json({
-                errors:
-                    ["You are not target of this invitation so you cannot accept it. Nice try doe"]
-            });
+            throw new Error('You are not target of this invitation so you cannot accept it. Nice try doe')
 
         //find sender and add target to his friends list
         const invitationSender = await UserModel.findOne({ _id: invitation.sender }).exec();
 
         if (!invitationSender)
-            newxt(new Error("Sender no longer exists"))
+            throw new Error('Sender no longer exists')
 
         //Check if users spoke before
         let conversation = [];
@@ -152,7 +147,7 @@ router.post("/accept", isLoggedIn, async (req, res, next) => {
         await invitation.remove(opt);
 
         await session.commitTransaction();
-        return res.status(200).json({ errors: ["Invitation accepted"] });
+        return res.status(200).json("Invitation accepted");
 
     } catch (error) {
         console.error(error);
@@ -172,14 +167,11 @@ router.post("/reject", isLoggedIn, async (req, res, next) => {
         const invitation = await InvitationModel.findOne({ _id: req.body.id }).exec();
 
         if (!invitation)
-            return res.status(400).json({ errors: ["No invitation found"] })
+            throw new Error('No invitation found')
 
         //Check if user is target or sender of this invitation
         if (req.user._id.toString() != invitation.target.toString() && req.user._id.toString() != invitation.sender.toString())
-            return res.status(400).json({
-                errors: [
-                    "You are not a target nor sender of this invitation so you cannot reject it. Nice try doe"]
-            });
+            throw new Error('You are not a target nor sender of this invitation so you cannot reject it. Nice try doe')
 
         //Remove invitation
         //TODO: remove() should cascade then any relaction to object will be removed as well

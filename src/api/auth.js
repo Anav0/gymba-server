@@ -36,15 +36,15 @@ router.get("/verify/:id/:token", async (req, res) => {
 
         //Check if email is not already verified
         if (user.isEmailVerified)
-            return res.status(400).json({ errors: ["Email is already verified"] });
+            throw new Error('Email is already verified')
 
         //Check if verification date is not > 7 days
         if (moment(user.emailVerificationSendDate).diff(Date.now(), settings.validationEmail.unit) > settings.validationEmail.validFor)
-            return res.status(400).json({ errors: ["Verification link expired"] });
+            throw new Error('Verification link expired')
 
         //Check if token match
         if (user.emailVerificationToken != token)
-            return res.status(400).json({ errors: ["Invalid token"] });
+            throw new Error('Invalid token')
 
         user.isEmailVerified = true;
         user.expireAt = undefined;
@@ -69,16 +69,16 @@ router.post("/resend-email", async (req, res) => {
         const user = await UserModel.findOne({ _id: userId }).exec();
 
         if (!user)
-            res.status(400).json({ errors: ["No user with given id found"] });
+            throw new Error("No user with given id found")
 
         //Check if email is not already verified
         if (user.isEmailVerified)
-            return res.status(400).json({ errors: ["Email is already verified"] });
+            throw new Error('Email is already verified')
 
         if (user.emailVerificationSendDate) {
             let diff = moment().diff(moment(user.emailVerificationSendDate), settings.validationEmailResend.unit);
             if (diff < settings.validationEmailResend.validFor)
-                return res.status(400).json({ errors: [`You requested resend ${diff} minutes ago. Try again after ${settings.validationEmailResend.validFor} minutes`] });
+                throw new Error(`You requested resend ${diff} minutes ago. Try again after ${settings.validationEmailResend.validFor} minutes`)
         }
 
         let token = uuidv4();

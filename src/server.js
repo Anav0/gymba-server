@@ -1,10 +1,10 @@
 require("dotenv").config();
 import mongoose from "mongoose";
 import app from "./api";
-import { initializeSocket } from "../src/service/socket";
+import chat from "../src/service/socket";
 
 const server = require("http").Server(app);
-initializeSocket(server)
+
 try {
   mongoose.connect(`${process.env.MONGO_CONNECTION_STRING}`,
     { useNewUrlParser: true, useFindAndModify: false, useCreateIndex: true },
@@ -12,8 +12,9 @@ try {
       if (error) console.error(error);
     }
   );
-
-  server.listen(5000);
+  server.listen(process.env.SERVER_PORT);
 } catch (error) {
   console.error(error)
 }
+
+export default server;

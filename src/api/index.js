@@ -77,7 +77,7 @@ export function isLoggedIn(req, res, next) {
 
 export function sendEmailVerification(userId, email, token) {
     //Create verification link containing user id and token
-    const verificationLink = `${process.env.SERVER_URL}/auth/verify/${userId}/${token}`;
+    const verificationLink = `${process.env.SERVER_URL}:${process.env.SERVER_PORT}/auth/verify/${userId}/${token}`;
     const htmlLink = `<a href="${verificationLink}">link</a>`;
     const messageOne = 'This is your email verification link:';
     const messageTwo = `it will expire in ${settings.validationEmail.validFor} ${settings.validationEmail.unit}`;

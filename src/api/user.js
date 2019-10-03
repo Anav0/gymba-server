@@ -75,7 +75,7 @@ router.post("/remove-friend", isLoggedIn, async (req, res) => {
         const friend = await UserModel.findById(req.body.id).exec();
 
         if (!friend)
-            return res.status(400).json({ errors: ['No user with given id found'] })
+            throw new Error('No user with given id found')
 
         req.user.friends = req.user.friends.filter(id => id.toString() != friend._id.toString())
         await req.user.save(opt)
