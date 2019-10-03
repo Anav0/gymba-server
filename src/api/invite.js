@@ -26,7 +26,7 @@ router.post("/", isLoggedIn, async (req, res, next) => {
         //Check if invitation already exists
         const results = await InvitationModel.find(
             {
-                $and: [{ sender: userId }, { target: targetId }]
+                $or: [{ $and: [{ sender: userId }, { target: targetId }] }, { $and: [{ sender: targetId }, { target: userId }] }]
             },
         ).exec();
 
@@ -118,11 +118,19 @@ router.post("/accept", isLoggedIn, async (req, res, next) => {
         if (!invitationSender)
             newxt(new Error("Sender no longer exists"))
 
-        //Create conversation
-        const conversation = await new ConversationModel({
-            roomId: uuidv4(),
-            participants: [req.user._id, invitationSender._id]
-        }).save(opt);
+        //Check if users spoke before
+        let conversation = [];
+        req.user.conversations.map(id => {
+            if (invitationSender.conversations.includes(id))
+                return conversation.push(id);
+        })
+        conversation = conversation[0];
+        if (!conversation)
+            //Create conversation
+            conversation = await new ConversationModel({
+                roomId: uuidv4(),
+                participants: [req.user._id, invitationSender._id]
+            }).save(opt);
 
         //add conversation
         req.user.conversations.push(conversation._id)

@@ -69,7 +69,6 @@ router.get("/:id/messages", isLoggedIn, async (req, res, next) => {
                 _id: { $in: conversation.messages }
             }).populate('sender', getUserModelPublicInfo()).sort({ sendDate: 1 }).exec()
 
-        console.log(messages)
         return res.status(200).json(messages);
     } catch (error) {
         console.error(error);
