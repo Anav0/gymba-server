@@ -5,6 +5,8 @@ import { UserModel } from "../schemas"
 import moment from "moment"
 import settings from "../settings"
 const router = express.Router();
+import uuidv4 from "uuid/v4";
+import { sendEmailVerification } from "../api";
 
 router.post('/login', (req, res, next) => {
     passport.authenticate('local', (error, user, info) => {
@@ -26,7 +28,7 @@ router.get("/logout", isLoggedIn, (req, res) => {
     res.status(200).send("Logout successfull");
 });
 
-router.get("/verify/:id/:token", async (req, res) => {
+router.get("/verify/:id/:token", async (req, res, next) => {
     try {
         const token = req.params.token;
         const userId = req.params.id;
@@ -61,7 +63,7 @@ router.get("/verify/:id/:token", async (req, res) => {
 
 });
 
-router.post("/resend-email", async (req, res) => {
+router.post("/resend-email", async (req, res, next) => {
     try {
         const userId = req.body.id;
 
@@ -78,7 +80,7 @@ router.post("/resend-email", async (req, res) => {
         if (user.emailVerificationSendDate) {
             let diff = moment().diff(moment(user.emailVerificationSendDate), settings.validationEmailResend.unit);
             if (diff < settings.validationEmailResend.validFor)
-                throw new Error(`You requested resend ${diff} minutes ago. Try again after ${settings.validationEmailResend.validFor} minutes`)
+                throw new Error(`You can request resend after waiting ${settings.validationEmailResend.validFor} ${settings.validationEmailResend.unit}`)
         }
 
         let token = uuidv4();

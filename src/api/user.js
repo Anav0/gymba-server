@@ -15,7 +15,7 @@ router.get("/", async (req, res, next) => {
             next(error)
         }
     }
-    throw Error('You are not authenticated');
+    return res.status(400).send("You are not authenticated")
 });
 
 router.post("/", async (req, res, next) => {

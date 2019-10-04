@@ -65,7 +65,6 @@ router.get("/:id/messages", isLoggedIn, async (req, res, next) => {
 
     try {
         const conversation = await ConversationModel.findOne({ $and: [{ _id: conversationId }, { participants: req.user._id }] }).exec();
-        console.log(conversation)
         if (!conversation)
             throw new Error('No conversation with given id found')
         let messages = [];
