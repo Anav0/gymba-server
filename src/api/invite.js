@@ -118,17 +118,23 @@ router.post("/accept", isLoggedIn, async (req, res, next) => {
             if (invitationSender.conversations.includes(id))
                 return conversation.push(id);
         })
+        console.log(conversation)
         conversation = conversation[0];
-        if (!conversation)
+        console.log(conversation)
+
+        //If they never spoke before...
+        if (!conversation) {
             //Create conversation
             conversation = await new ConversationModel({
                 roomId: uuidv4(),
                 participants: [req.user._id, invitationSender._id]
             }).save(opt);
 
-        //add conversation
-        req.user.conversations.push(conversation._id)
-        invitationSender.conversations.push(conversation._id);
+            //add conversation
+            req.user.conversations.push(conversation._id)
+            invitationSender.conversations.push(conversation._id);
+        }
+
 
         //Add invitation sender to user's friends list
         req.user.friends.push(invitation.sender);
