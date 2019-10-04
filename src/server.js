@@ -1,8 +1,6 @@
 require("dotenv").config();
 import mongoose from "mongoose";
 import app from "./api";
-import chat from "../src/service/socket";
-
 const server = require("http").Server(app);
 
 try {
@@ -18,3 +16,4 @@ try {
 }
 
 export default server;
+

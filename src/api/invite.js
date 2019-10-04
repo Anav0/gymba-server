@@ -4,7 +4,6 @@ import uuidv4 from "uuid/v4";
 import express from 'express';
 import mongoose from "mongoose";
 const router = express.Router();
-import chat from "../service/socket";
 
 router.post("/", isLoggedIn, async (req, res, next) => {
     const session = await mongoose.startSession();

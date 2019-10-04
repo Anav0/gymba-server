@@ -2,12 +2,12 @@
   "name": "gymba",
   "version": "0.0.1",
   "description": "Gymba chat",
-  "main": "server.js",
+  "main": "entry.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon --exec babel-node src/server.js",
+    "dev": "nodemon --exec babel-node src/entry.js",
     "build": "babel src --out-dir dist",
-    "serve": "node dist/server.js"
+    "serve": "node dist/entry.js"
   },
   "keywords": [
     "chat",

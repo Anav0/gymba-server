@@ -15,7 +15,10 @@ router.get("/", isLoggedIn, async (req, res) => {
 
 router.get("/last-active", isLoggedIn, async (req, res, next) => {
     try {
-        const conversations = await ConversationModel.find({ participants: req.user._id }).populate('participants', getUserModelPublicInfo()).exec();
+        const mostRecentMessage = await MessageModel.findOne({ conversationId: { $in: req.user.conversations } }).sort({ sendDate: -1 }).limit(1)
+        if (!mostRecentMessage)
+            return res.status(200).json({});
+        const conversations = await ConversationModel.find({ messages: mostRecentMessage._id }).populate('participants', getUserModelPublicInfo()).exec();
         if (conversations.length > 0)
             return res.status(200).json(conversations[0]);
         else res.status(200).json({});
@@ -52,6 +55,9 @@ router.get("/:id/messages", isLoggedIn, async (req, res, next) => {
     let endDate = null;
     const conversationId = req.params.id;
 
+    if (!conversationId)
+        throw new Error('There is no conversation id provided')
+
     if (req.body.startDate && req.body.endDate) {
         startDate = req.body.startDate;
         endDate = req.body.endDate;
@@ -59,6 +65,9 @@ router.get("/:id/messages", isLoggedIn, async (req, res, next) => {
 
     try {
         const conversation = await ConversationModel.findOne({ $and: [{ _id: conversationId }, { participants: req.user._id }] }).exec();
+        console.log(conversation)
+        if (!conversation)
+            throw new Error('No conversation with given id found')
         let messages = [];
         if (endDate)
             messages = await MessageModel.find({

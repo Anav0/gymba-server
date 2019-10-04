@@ -1,7 +1,6 @@
 import { MessageModel, UserModel, ConversationModel } from "../schemas";
 import mongoose from "mongoose";
 import server from "../server";
-
 console.log("Initializing sockets...")
 var io = require('socket.io')(server);
 const chat = io.of('/chat');
