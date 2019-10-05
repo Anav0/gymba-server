@@ -101,4 +101,42 @@ router.post("/resend-email", async (req, res, next) => {
 
 });
 
+router.post("/resend-email/:email", async (req, res, next) => {
+    try {
+        const email = req.params.email;
+
+        //Get user
+        const user = await UserModel.findOne({ email: email }).exec();
+
+        if (!user)
+            throw new Error("No user with given email found")
+
+        //Check if email is not already verified
+        if (user.isEmailVerified)
+            throw new Error('Email is already verified')
+
+        if (user.emailVerificationSendDate) {
+            let diff = moment().diff(moment(user.emailVerificationSendDate), settings.validationEmailResend.unit);
+            if (diff < settings.validationEmailResend.validFor)
+                throw new Error(`You can request resend after waiting ${settings.validationEmailResend.validFor} ${settings.validationEmailResend.unit}`)
+        }
+
+        let token = uuidv4();
+
+        await sendEmailVerification(user._id, user.email, token)
+
+        user.isEmailVerified = false;
+        user.emailVerificationToken = token;
+        user.emailVerificationSendDate = + new Date();
+
+        await user.save();
+        return res.status(200).send("Email verification send");
+
+    } catch (error) {
+        console.error(error)
+        next(error)
+    }
+
+});
+
 export default router;
