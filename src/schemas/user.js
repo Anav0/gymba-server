@@ -9,7 +9,7 @@ const publicInfo = {
     type: String,
     required: [true, 'Username is required'],
     maxlength: [250, "Username max length is 250"],
-    index: { unique: true },
+    unique: true,
     trim: true
   },
   fullname: {
@@ -50,7 +50,7 @@ const User = new Schema({
     required: [true, 'Email is required'],
     maxlength: 250,
     trim: true,
-    index: { unique: true },
+    unique: true,
     match: [
       /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
       "Please enter a valid email address"
