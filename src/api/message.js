@@ -6,7 +6,7 @@ import { isLoggedIn } from ".";
 router.patch("/", isLoggedIn, async (req, res, next) => {
     try {
         if (!req.body._id)
-            throw new Error('No message to update was send')
+            throw new Error('No id of message to update was send')
 
         if (!req.body.status)
             throw new Error('No status send')
