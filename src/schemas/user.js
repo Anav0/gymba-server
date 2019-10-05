@@ -45,12 +45,12 @@ const User = new Schema({
     maxlength: [250, "Password max length is 250"],
     trim: true
   },
-  //TODO: make this field unique only after testing
   email: {
     type: String,
     required: [true, 'Email is required'],
     maxlength: 250,
     trim: true,
+    index: { unique: true },
     match: [
       /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
       "Please enter a valid email address"
