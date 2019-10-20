@@ -18,10 +18,24 @@ import opinionEndpoints from "./opinion";
 import messageEndpoints from "./message";
 import mongoose from "mongoose"
 import express from 'express';
+const rateLimit = require("express-rate-limit");
 const app = express();
 
 //TODO: Add  friendships table to DB to store information about friendships duration, etc etc.
 console.log("Initializing API...")
+
+// Enable if you're behind a reverse proxy (Heroku, Bluemix, AWS ELB, Nginx, etc)
+// see https://expressjs.com/en/guide/behind-proxies.html
+// app.set('trust proxy', 1);
+
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100                // limit each IP to 100 requests per windowMs
+});
+
+//  apply to all requests
+app.use(limiter);
+
 app.use(cors({
     origin: true,
     credentials: true,
