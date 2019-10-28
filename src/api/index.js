@@ -13,6 +13,7 @@ import userEndpoints from "./user";
 import usersEndpoints from "./users";
 import authEndpoints from "./auth";
 import inviteEndpoints from "./invite";
+import botEndpoints from "./bot";
 import conversationEndpoints from "./conversation";
 import opinionEndpoints from "./opinion";
 import messageEndpoints from "./message";
@@ -66,9 +67,10 @@ app.use("/user", userEndpoints)
 app.use("/users", usersEndpoints)
 app.use("/auth", authEndpoints)
 app.use("/invite", inviteEndpoints)
-app.use("/conversation", conversationEndpoints)
-app.use("/opinion", opinionEndpoints)
-app.use("/message", messageEndpoints)
+app.use("/conversation", conversationEndpoints);
+app.use("/opinion", opinionEndpoints);
+app.use("/message", messageEndpoints);
+app.use("/bot", botEndpoints);
 app.use((error, req, res, next) => {
     return res.status(error.status || 500).json({ errors: [error.message] })
 })
