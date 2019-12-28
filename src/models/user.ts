@@ -1,20 +1,37 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import uniqueValidator from 'mongoose-unique-validator'
+import uniqueValidator from "mongoose-unique-validator";
 
 const Schema = mongoose.Schema;
-
+export interface IUser extends mongoose.Document {
+  _id: string;
+  username: string;
+  fullname: string;
+  desc: string;
+  creationDate: number;
+  avatarUrl: string;
+  friends: string[];
+  invitations: string[];
+  conversations: string[];
+  expireAt: number;
+  password: string;
+  email: string;
+  isEmailVerified: boolean;
+  emailVerificationSendDate: number;
+  emailVerificationToken: string;
+  comparePassword: Function;
+}
 const publicInfo = {
   username: {
     type: String,
-    required: [true, 'Username is required'],
+    required: [true, "Username is required"],
     maxlength: [250, "Username max length is 250"],
     unique: true,
     trim: true
   },
   fullname: {
     type: String,
-    required: [true, 'Fullname is required'],
+    required: [true, "Fullname is required"],
     maxlength: [250, "Name max length is 250"],
     trim: true
   },
@@ -31,23 +48,23 @@ const publicInfo = {
   avatarUrl: {
     type: String
   },
-  friends: [{ type: Schema.Types.ObjectId, ref: 'User' }],
-}
+  friends: [{ type: Schema.Types.ObjectId, ref: "User" }]
+};
 
-const User = new Schema({
+const User = new Schema<IUser>({
   expireAt: {
     type: Date
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: [true, "Password is required"],
     minlength: [6, "Password needs to be at least 6 characters long"],
     maxlength: [250, "Password max length is 250"],
     trim: true
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
+    required: [true, "Email is required"],
     maxlength: 250,
     trim: true,
     unique: true,
@@ -65,25 +82,28 @@ const User = new Schema({
   emailVerificationToken: {
     type: String
   },
-  conversations: [{ type: Schema.Types.ObjectId, ref: 'Conversation' }],
-  invitations: [{ type: Schema.Types.ObjectId, ref: 'Invitation' }],
+  conversations: [{ type: Schema.Types.ObjectId, ref: "Conversation" }],
+  invitations: [{ type: Schema.Types.ObjectId, ref: "Invitation" }]
 });
 
-User.add(publicInfo)
+User.add(publicInfo);
 
 //Delete user after expireAt date
 //It's only if user didn't verify his or her email
 User.index({ expireAt: 1 }, { expireAfterSeconds: 0 });
 
-/* Mongoose middleware is not invoked on update() operations,
- so you must use a save() if you want to update user passwords */
-User.pre('remove', function (next) {
-
-  next();
+User.method("comparePassword", function(
+  candidatePassword: string,
+  callback: Function
+) {
+  bcrypt.compare(candidatePassword, this.password, (error, isMatch) => {
+    if (error) return callback(error);
+    callback(null, isMatch);
+  });
 });
 
 //WARNING! this function cannot have arrow syntax becouse "this" will be undefined
-User.pre("save", function (next) {
+User.pre<IUser>("save", function(next) {
   var user = this;
 
   //only hash the password if it has been modified (or is new)
@@ -107,17 +127,10 @@ User.pre("save", function (next) {
     });
   });
 });
-//WARNING!!! do not change to arrow function, reason above
-User.methods.comparePassword = function (candidatePassword, callback) {
-  bcrypt.compare(candidatePassword, this.password, (error, isMatch) => {
-    if (error) return callback(error);
-    callback(null, isMatch);
-  });
-};
 
 export const getUserModelPublicInfo = () => {
-  return Object.getOwnPropertyNames(publicInfo)
-}
+  return Object.getOwnPropertyNames(publicInfo);
+};
 
-User.plugin(uniqueValidator, { errors: ["{VALUE} is already taken"] })
-export const UserModel = mongoose.model("User", User);
+User.plugin(uniqueValidator, { errors: ["{VALUE} is already taken"] });
+export const UserModel = mongoose.model<IUser>("User", User);
