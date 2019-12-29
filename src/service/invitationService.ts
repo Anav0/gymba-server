@@ -129,12 +129,10 @@ export class InvitationService implements IInvitationService {
           //add to friend list
           invitationSender.friends.push(invitation.target);
 
-          //Save target user
-          await user.save(opt);
-
           //save changes
-          await invitationSender.save(opt);
           await invitation.remove();
+          await invitationSender.save(opt);
+          await user.save(opt);
           resolve();
         } catch (error) {
           runner.endSession();

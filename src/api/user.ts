@@ -48,7 +48,7 @@ router.post(
   (req, res, next) => isLoggedIn(req, res, next),
   async (req, res, next) => {
     const runner = new TransactionRunner();
-    const opt = runner.startSession();
+    const opt = await runner.startSession();
     //TODO: find a way to make transactions work with multiple services
     try {
       runner.startTransaction();
