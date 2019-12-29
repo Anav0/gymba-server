@@ -41,7 +41,6 @@ router.get("/verify/:id/:token", async (req, res, next) => {
 router.post("/resend-email", async (req, res, next) => {
   try {
     const userId = req.body.id;
-
     //Get user
     await new AuthService().reVerifyUser(userId);
     return res.status(200).send("Email verification send");
@@ -57,8 +56,10 @@ router.post("/resend-email/:email", async (req, res, next) => {
 
     const user = await new UserService().getByEmail(email);
 
+    if (!user) throw new Error("Found no account with this email address");
+
     //Get user
-    new AuthService().reVerifyUser(user._id);
+    await new AuthService().reVerifyUser(user._id);
     return res.status(200).send("Email verification send");
   } catch (error) {
     console.error(error);

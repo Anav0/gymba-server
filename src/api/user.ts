@@ -54,7 +54,7 @@ router.post(
       runner.startTransaction();
       const user = req.user as IUser;
       const userService = new UserService();
-      const friend = await userService.getById(req.body.id);
+      const friend = await userService.getById(req.body.id, true);
 
       if (!friend) throw new Error("No user with given id found");
 
