@@ -73,7 +73,7 @@ router.get(
       const invite = new InvitationService().getById(
         req.params.id,
         user._id,
-        req.params.populate
+        null
       );
       if (!invite) throw new Error("No invitation found");
       return res.status(200).json(invite);
@@ -84,19 +84,18 @@ router.get(
   }
 );
 
-router.get(
+router.post(
   "/involves",
   (req, res, next) => isLoggedIn(req, res, next),
   async (req, res, next) => {
     try {
       const user = req.user as IUser;
-      let invite = new InvitationService().getInvitationInvolving(
+
+      const invite = await new InvitationService().getInvitationInvolving(
         user._id,
         req.body.userId,
         req.body.populate
       );
-
-      if (!invite) throw new Error("No invitations found");
       return res.status(200).json(invite);
     } catch (error) {
       console.error(error);
@@ -135,7 +134,7 @@ router.post(
     }
   }
 );
-router.get(
+router.post(
   "/sent",
   (req, res, next) => isLoggedIn(req, res, next),
   async (req, res, next) => {
@@ -153,7 +152,7 @@ router.get(
     }
   }
 );
-router.get(
+router.post(
   "/recived",
   (req, res, next) => isLoggedIn(req, res, next),
   async (req, res, next) => {

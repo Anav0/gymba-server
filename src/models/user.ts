@@ -132,5 +132,5 @@ export const getUserModelPublicInfo = () => {
   return Object.getOwnPropertyNames(publicInfo);
 };
 
-User.plugin(uniqueValidator, { errors: ["{VALUE} is already taken"] });
+User.plugin(uniqueValidator, { message: "{VALUE} is already taken" });
 export const UserModel = mongoose.model<IUser>("User", User);
