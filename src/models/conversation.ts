@@ -1,8 +1,13 @@
 import mongoose from "mongoose";
+const Schema = mongoose.Schema;
 
-var Schema = mongoose.Schema;
+export interface IConversation extends mongoose.Document {
+    roomId: string
+    participants: Array<mongoose.Schema.Types.ObjectId>
+    messages: Array<mongoose.Schema.Types.ObjectId>
+}
 
-const Conversation = new Schema({
+const Conversation = new Schema<IConversation>({
     roomId: {
         type: String,
         required: true
@@ -13,4 +18,4 @@ const Conversation = new Schema({
     messages: [{ type: Schema.Types.ObjectId, ref: 'Message' }],
 });
 //TODO: add pre update hook to check if number of participants is not < 2. If so delete the conversation
-export const ConversationModel = mongoose.model("Conversation", Conversation);
+export const ConversationModel = mongoose.model<IConversation>("Conversation", Conversation);
