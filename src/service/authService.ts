@@ -199,7 +199,7 @@ export class AuthService implements IAuthService {
         return resolve(
           new EmailService().sendEmail(
             email,
-            process.env.SENDER_EMAIL,
+            process.env.MY_EMAIL,
             "Chat account verification",
             `${messageOne} ${verificationLink} ${messageTwo}`,
             `<p> ${messageOne} ${htmlLink} ${messageTwo} </p>`

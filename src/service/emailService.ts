@@ -45,8 +45,12 @@ class SendGridEmailSender implements EmailSender {
     return new Promise(async (resolve, reject) => {
       try {
         const msg = {
-          to,
-          from,
+          to: {
+            email: to
+          },
+          from: {
+            email: from
+          },
           subject,
           content: [
             {
@@ -59,7 +63,8 @@ class SendGridEmailSender implements EmailSender {
         await sender.send(msg as MailData, false);
         resolve();
       } catch (error) {
-        reject(new Error(error.message));
+        //if (error.response.body) console.log(error.response.body);
+        reject(error);
       }
     });
   }
