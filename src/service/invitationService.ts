@@ -14,7 +14,8 @@ export interface IInvitationService {
   getById(
     invitationId: string,
     userId: string,
-    populate: string
+    populate?: string,
+    session?: any
   ): Promise<IInvitation>;
   getRecivedInvitations(
     userId: string,
@@ -24,12 +25,14 @@ export interface IInvitationService {
   getInvitationInvolving(
     userId: string,
     targetId: string,
-    populate: string
+    populate?: string,
+    session?: any
   ): Promise<IInvitation>;
   getInvitationsSendOrRecivedByUser(userId: string): Promise<IInvitation[]>;
   getInvitationSendOrRecivedByUser(
     invitationId: string,
-    userId: string
+    userId: string,
+    session?: any
   ): Promise<IInvitation>;
 }
 
@@ -37,13 +40,17 @@ export class InvitationService implements IInvitationService {
   getById(
     invitationId: string,
     userId: string,
-    populate: string
+    populate: string = "",
+    session?: any
   ): Promise<IInvitation> {
-    return InvitationModel.findOne({
+    let query = InvitationModel.findOne({
       $and: [{ _id: invitationId }, { target: userId }]
-    })
-      .populate(!populate ? "" : populate, getUserModelPublicInfo())
-      .exec();
+    });
+
+    if (populate) query = query.populate(populate);
+    if (session) query = query.session(session);
+
+    return query.exec();
   }
   getInvitationsSendOrRecivedByUser(userId: string): Promise<IInvitation[]> {
     return InvitationModel.find({
@@ -52,14 +59,19 @@ export class InvitationService implements IInvitationService {
   }
   getInvitationSendOrRecivedByUser(
     invitationId: string,
-    userId: string
+    userId: string,
+    session?: any
   ): Promise<IInvitation> {
-    return InvitationModel.findOne({
-      $and: [
-        { $or: [{ sender: userId }, { target: userId }] },
-        { _id: invitationId }
-      ]
-    }).exec();
+    return InvitationModel.findOne(
+      {
+        $and: [
+          { $or: [{ sender: userId }, { target: userId }] },
+          { _id: invitationId }
+        ]
+      },
+      null,
+      { session }
+    ).exec();
   }
   createInvitation(model: IInvitation, transation: any): Promise<IInvitation> {
     const invitation = new InvitationModel(model);
@@ -68,11 +80,15 @@ export class InvitationService implements IInvitationService {
   acceptInvitation(invitationId: string, userId: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
       const runner = new TransactionRunner();
-      const opt = await runner.startSession();
-
-      runner.withTransaction(async () => {
+      await runner.startSession();
+      return runner.withTransaction(async opt => {
         try {
-          const invitation = await this.getById(invitationId, userId, "");
+          const invitation = await this.getById(
+            invitationId,
+            userId,
+            "",
+            opt.session
+          );
 
           if (!invitation) return reject(new Error("No invitation found"));
 
@@ -89,7 +105,8 @@ export class InvitationService implements IInvitationService {
           //find sender and add target to his friends list
           const invitationSender = await userService.getById(
             invitation.sender,
-            true
+            true,
+            opt.session
           );
 
           if (!invitationSender)
@@ -97,7 +114,7 @@ export class InvitationService implements IInvitationService {
 
           //Check if users spoke before
           let conversation = [] as string[];
-          let user = await userService.getById(userId, true);
+          let user = await userService.getById(userId, true, opt.session);
 
           if (!user) return reject(new Error("No user with given id found"));
 
@@ -125,17 +142,15 @@ export class InvitationService implements IInvitationService {
 
           //Add invitation sender to user's friends list
           user.friends.push(invitation.sender);
+          await user.save(opt);
 
           //add to friend list
           invitationSender.friends.push(invitation.target);
-
-          //save changes
-          await invitation.remove();
           await invitationSender.save(opt);
-          await user.save(opt);
+
+          await invitation.remove();
           resolve();
         } catch (error) {
-          runner.endSession();
           reject(error);
         }
       });
@@ -148,13 +163,18 @@ export class InvitationService implements IInvitationService {
       const opt = await runner.startSession();
       try {
         runner.startTransaction();
-        const user = await new UserService().getById(userId);
+        const user = await new UserService().getById(
+          userId,
+          false,
+          opt.session
+        );
 
         if (!user) return reject(new Error("No user with given id found"));
 
         const invitation = await this.getInvitationSendOrRecivedByUser(
           invitationId,
-          userId
+          userId,
+          opt.session
         );
 
         if (!invitation) return reject(new Error("No invitation found"));
@@ -205,14 +225,19 @@ export class InvitationService implements IInvitationService {
   getInvitationInvolving(
     userId: string,
     targetId: string,
-    populate: string
+    populate: string = "",
+    session?: any
   ): Promise<IInvitation> {
-    return InvitationModel.findOne({
-      $or: [
-        { $and: [{ sender: userId }, { target: targetId }] },
-        { $and: [{ sender: targetId }, { target: userId }] }
-      ]
-    })
+    return InvitationModel.findOne(
+      {
+        $or: [
+          { $and: [{ sender: userId }, { target: targetId }] },
+          { $and: [{ sender: targetId }, { target: userId }] }
+        ]
+      },
+      null,
+      { session }
+    )
       .populate(!populate ? "" : populate, getUserModelPublicInfo())
       .exec();
   }

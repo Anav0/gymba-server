@@ -31,7 +31,8 @@ router.post(
       const results = await invitationService.getInvitationInvolving(
         userId,
         targetId,
-        ""
+        "",
+        opt.session
       );
 
       if (results) throw new Error("Invitation was already send");
@@ -44,7 +45,11 @@ router.post(
         opt
       );
 
-      const invitedUser = await userService.getById(targetId, true);
+      const invitedUser = await userService.getById(
+        targetId,
+        true,
+        opt.session
+      );
 
       if (!invitedUser) throw new Error("Invited user not found");
 

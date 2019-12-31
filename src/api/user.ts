@@ -48,13 +48,12 @@ router.post(
   (req, res, next) => isLoggedIn(req, res, next),
   async (req, res, next) => {
     const runner = new TransactionRunner();
-    const opt = await runner.startSession();
-    //TODO: find a way to make transactions work with multiple services
     try {
+      const opt = await runner.startSession();
       runner.startTransaction();
       const user = req.user as IUser;
       const userService = new UserService();
-      const friend = await userService.getById(req.body.id, true);
+      const friend = await userService.getById(req.body.id, true, opt.session);
 
       if (!friend) throw new Error("No user with given id found");
 
@@ -70,7 +69,8 @@ router.post(
       //await friend.save(opt);
       await userService.update(friend._id, friend, opt);
 
-      runner.commitTransaction();
+      await runner.commitTransaction();
+
       return res
         .status(200)
         .json(`${friend.fullname} is no longer your friend`);

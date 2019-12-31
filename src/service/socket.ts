@@ -64,7 +64,11 @@ chat.on("connection", socket => {
     try {
       runner.startTransaction();
 
-      const sender = await new UserService().getById(data.userId);
+      const sender = await new UserService().getById(
+        data.userId,
+        false,
+        opt.session
+      );
 
       if (!sender) throw new Error("No sender found");
 

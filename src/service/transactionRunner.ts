@@ -9,7 +9,7 @@ export class TransactionRunner {
   }
   async withTransaction(functionToPerform: Function) {
     if (this.isSessionStarted())
-      await this.session.withTransaction(functionToPerform);
+      await this.session.withTransaction(session => functionToPerform(session));
   }
   startTransaction() {
     if (this.isSessionStarted()) this.session.startTransaction();

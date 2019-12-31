@@ -3,7 +3,7 @@ import { InvitationService } from "./invitationService";
 
 export interface IUserService {
   getListOfSuggestedFriends(user: IUser): Promise<IUser[]>;
-  getById(id: string): Promise<IUser>;
+  getById(id: string, session: any): Promise<IUser>;
   getByEmail(email: string): Promise<IUser>;
   getByUsername(username: string): Promise<IUser>;
   getUsers(): Promise<IUser[]>;
@@ -46,10 +46,17 @@ export class UserService implements IUserService {
       .select(getPrivateInfo ? "" : getUserModelPublicInfo())
       .exec();
   }
-  getById(id: string, getPrivateInfo: boolean = false): Promise<IUser> {
-    return UserModel.findOne({ _id: id })
-      .select(getPrivateInfo ? "" : getUserModelPublicInfo())
-      .exec();
+  getById(
+    id: string,
+    getPrivateInfo: boolean = false,
+    session?: any
+  ): Promise<IUser> {
+    let query = UserModel.findOne({ _id: id });
+
+    if (!getPrivateInfo) query = query.select(getUserModelPublicInfo());
+    if (session) query = query.session(session);
+
+    return query.exec();
   }
   getByEmail(email: string): Promise<IUser> {
     return UserModel.findOne({ email })
@@ -58,7 +65,7 @@ export class UserService implements IUserService {
   }
   async create(model: IUser): Promise<IUser> {
     const user = new UserModel(model);
-    return await user.save();
+    return user.save();
   }
   update(id: string, model: IUser, transation: any): Promise<IUser> {
     return new Promise(async (resolve, reject) => {
