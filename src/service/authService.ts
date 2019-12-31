@@ -40,7 +40,7 @@ passport.serializeUser((user: IUser, done: Function) => {
 
 passport.deserializeUser(async (id: string, done: Function) => {
   const user = await new UserService().getById(id, true);
-  if (!user) return done("No user found", null);
+  // if (!user) return done("No user found", null);
   return done(null, user);
 });
 
@@ -136,6 +136,7 @@ export class AuthService implements IAuthService {
     return new Promise(async (resolve, reject) => {
       try {
         const user = await new UserService().getById(id, true);
+        console.log(user);
         if (!user) return reject(new Error("No user with given id found"));
         if (user.isEmailVerified)
           return reject(new Error("User is already verified"));
