@@ -81,7 +81,7 @@ export class InvitationService implements IInvitationService {
     return new Promise(async (resolve, reject) => {
       const runner = new TransactionRunner();
       await runner.startSession();
-      return runner.withTransaction(async opt => {
+      return await runner.withTransaction(async opt => {
         try {
           const invitation = await this.getById(
             invitationId,

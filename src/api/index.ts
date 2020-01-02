@@ -23,6 +23,7 @@ import botEndpoints from "./bot";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { MongoDbService } from "../service/dbService";
+import { VerificationModel } from "../models/verification";
 
 const dbService = new MongoDbService();
 
@@ -91,6 +92,7 @@ app.use((error, req, res, next) => {
   return res.status(error.status || 500).json({ errors: [error.message] });
 });
 try {
+  VerificationModel.createCollection();
   UserModel.createCollection();
   ConversationModel.createCollection();
   MessageModel.createCollection();

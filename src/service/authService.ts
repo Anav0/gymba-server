@@ -6,6 +6,9 @@ import { Strategy } from "passport-local";
 import { UserService } from "./userService";
 import moment from "moment";
 import uuidv4 from "uuid/v4";
+import { VerificationService } from "./verificationService";
+import { TransactionRunner } from "./transactionRunner";
+import { IVerification } from "../models/verification";
 
 passport.use(
   new Strategy(async (username: string, password: string, done: Function) => {
@@ -16,8 +19,8 @@ passport.use(
       if (!user) {
         return done(new Error("Wrong username or password"), null);
       }
-      if (!user.isEmailVerified)
-        return done(new Error("Email is not verified"), null);
+      const verification = await new VerificationService().getByUser(user._id);
+      if (verification) return done(new Error("Email is not verified"), null);
 
       user.comparePassword(password, (error, isMatch) => {
         if (error) return done(error);
@@ -92,7 +95,10 @@ export class AuthService implements IAuthService {
         const userService = new UserService();
         const user = await userService.getById(id, true);
         if (!user) return reject(new Error("No user with given id found"));
-        if (user.isEmailVerified) return resolve(true);
+        const verification = await new VerificationService().getByUser(
+          user._id
+        );
+        if (!verification) return resolve(true);
         else return resolve(false);
       } catch (error) {
         reject(error);
@@ -102,72 +108,87 @@ export class AuthService implements IAuthService {
 
   reVerifyUser(id: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
-      try {
-        const user = await new UserService().getById(id, true);
+      const runner = new TransactionRunner();
+      await runner.startSession();
+      return await runner.withTransaction(async session => {
+        try {
+          const user = await new UserService().getById(id, true, session);
 
-        if (!user._id) return reject(new Error("No user with given id found"));
+          if (!user._id)
+            return reject(new Error("No user with given id found"));
 
-        //Check if email is not already verified
-        if (user.isEmailVerified)
-          return reject(new Error("Email is already verified"));
-
-        if (user.emailVerificationSendDate) {
-          let diff = moment().diff(
-            moment(user.emailVerificationSendDate),
-            settings.validationEmailResend.unit as moment.unitOfTime.Base
+          //Check if email is not already verified
+          const verification = await new VerificationService().getByUser(
+            user._id,
+            session
           );
-          if (diff < settings.validationEmailResend.validFor)
-            return reject(
-              new Error(
-                `You can request resend after waiting ${settings.validationEmailResend.validFor} ${settings.validationEmailResend.unit}`
-              )
-            );
-        }
+          if (verification)
+            return reject(new Error("Email is already verified"));
 
-        await new AuthService().sendVerificationEmail(user.email);
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
+          if (verification.sendDate) {
+            let diff = moment().diff(
+              moment(verification.sendDate),
+              settings.validationEmailResend.unit as moment.unitOfTime.Base
+            );
+            if (diff < settings.validationEmailResend.validFor)
+              return reject(
+                new Error(
+                  `You can request resend after waiting ${settings.validationEmailResend.validFor} ${settings.validationEmailResend.unit}`
+                )
+              );
+          }
+
+          await new AuthService().sendVerificationEmail(user.email, {
+            session
+          });
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
     });
   }
 
   verifyUser(id: string, token: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
-      try {
-        const user = await new UserService().getById(id, true);
-        console.log(user);
-        if (!user) return reject(new Error("No user with given id found"));
-        if (user.isEmailVerified)
-          return reject(new Error("User is already verified"));
-        //Check if verification date is not > 7 days
-        if (
-          moment(user.emailVerificationSendDate).diff(
-            Date.now(),
-            settings.validationEmail.unit as moment.unitOfTime.Base
-          ) > settings.validationEmail.validFor
-        )
-          return reject(new Error("Verification link expired"));
+      const runner = new TransactionRunner();
+      await runner.startSession();
+      return await runner.withTransaction(async session => {
+        try {
+          const user = await new UserService().getById(id, true, session);
+          if (!user) return reject(new Error("No user with given id found"));
+          const verificationService = new VerificationService();
+          const verification = await verificationService.getByUser(
+            user._id,
+            session
+          );
+          if (!verification)
+            return reject(new Error("User is already verified"));
+          //Check if verification date is not > 7 days
+          if (
+            moment(verification.sendDate).diff(
+              Date.now(),
+              settings.validationEmail.unit as moment.unitOfTime.Base
+            ) > settings.validationEmail.validFor
+          )
+            return reject(new Error("Verification link expired"));
 
-        //Check if token match
-        if (user.emailVerificationToken != token)
-          return reject(new Error("Invalid token"));
+          //Check if token match
+          if (verification.token != token)
+            return reject(new Error("Invalid token"));
 
-        user.isEmailVerified = true;
-        user.expireAt = undefined;
-        user.emailVerificationToken = undefined;
-        user.emailVerificationSendDate = undefined;
-        await user.save();
-        return resolve();
-      } catch (error) {
-        reject(error);
-      }
+          await verificationService.remove(verification._id, session);
+
+          user.expireAt = undefined;
+          await user.save({ session });
+          return resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
     });
   }
-  async sendVerificationEmail(
-    email: string,
-    transaction: any = null
-  ): Promise<any> {
+  async sendVerificationEmail(email: string, transaction: any): Promise<any> {
     return new Promise(async (resolve, reject) => {
       try {
         //Generate random guid
@@ -176,14 +197,20 @@ export class AuthService implements IAuthService {
         let user = await userService.getByEmail(
           email,
           true,
-          transaction ? transaction.session : null
+          transaction.session
         );
 
         if (!user) return reject(new Error("No user with given email found"));
+        const verificationService = new VerificationService();
 
-        user.emailVerificationToken = token;
-        user.emailVerificationSendDate = +Date.now();
-        user.isEmailVerified = false;
+        await verificationService.create(
+          {
+            user: user._id,
+            token,
+            sendDate: +Date.now()
+          } as IVerification,
+          transaction.session
+        );
         user.expireAt = moment(Date.now())
           .add(
             settings.user.validFor,
@@ -191,24 +218,23 @@ export class AuthService implements IAuthService {
           )
           .valueOf();
 
+        await userService.update(user._id, user, transaction);
+
         //Create verification link containing user id and token
         const verificationLink = `${process.env.CLIENT_URL}/verification/${user._id}/${token}`;
         const htmlLink = `<a href="${verificationLink}">link</a>`;
         const messageOne = "This is your email verification link:";
         const messageTwo = `it will expire in ${settings.validationEmail.validFor} ${settings.validationEmail.unit}`;
 
-        await userService.update(user._id, user, transaction);
-
         //Send verification email
-        return resolve(
-          new EmailService().sendEmail(
-            email,
-            process.env.MY_EMAIL,
-            "Chat account verification",
-            `${messageOne} ${verificationLink} ${messageTwo}`,
-            `<p> ${messageOne} ${htmlLink} ${messageTwo} </p>`
-          )
+        const response = await new EmailService().sendEmail(
+          email,
+          process.env.MY_EMAIL,
+          "Chat account verification",
+          `${messageOne} ${verificationLink} ${messageTwo}`,
+          `<p> ${messageOne} ${htmlLink} ${messageTwo} </p>`
         );
+        return resolve(response);
       } catch (error) {
         reject(error);
       }

@@ -15,9 +15,6 @@ export interface IUser extends mongoose.Document {
   expireAt: number;
   password: string;
   email: string;
-  isEmailVerified: boolean;
-  emailVerificationSendDate: number;
-  emailVerificationToken: string;
   comparePassword: Function;
   isBot: boolean;
 }
@@ -74,16 +71,7 @@ export const User = new Schema<IUser>(
         "Please enter a valid email address"
       ]
     },
-    isEmailVerified: {
-      type: Boolean
-    },
 
-    emailVerificationSendDate: {
-      type: Date
-    },
-    emailVerificationToken: {
-      type: String
-    },
     conversations: [{ type: Schema.Types.ObjectId, ref: "Conversation" }],
     invitations: [{ type: Schema.Types.ObjectId, ref: "Invitation" }]
   },
