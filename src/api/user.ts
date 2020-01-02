@@ -4,7 +4,10 @@ import { AuthService } from "../service/authService";
 import { Router } from "express";
 import { UserService } from "../service/userService";
 import { TransactionRunner } from "../service/transactionRunner";
+import { BotService } from "../service/botService";
+import { ConversationService } from "../service/conversationService";
 const router = Router();
+import uuidv4 from "uuid/v4";
 
 router.get("/", async (req, res, next) => {
   try {
@@ -16,15 +19,41 @@ router.get("/", async (req, res, next) => {
 });
 
 router.post("/", async (req, res, next) => {
+  const runner = new TransactionRunner();
+  const opt = await runner.startSession();
   try {
-    let user = await new UserService().create({
-      ...req.body,
-      creationDate: new Date()
-    });
-    await new AuthService().sendVerificationEmail(user.email);
+    runner.startTransaction();
+    let user = await new UserService().create(req.body, opt);
+    const botService = new BotService();
+    const bots = await botService.getAll(opt.session, true);
+
+    for (let i = 0; i < bots.length; i++) {
+      let bot = bots[i];
+      let conversation = await new ConversationService().createConversation(
+        {
+          roomId: uuidv4(),
+          participants: [bot._id, user._id]
+        },
+        opt
+      );
+
+      user.conversations.push(conversation._id);
+      bot.conversations.push(conversation._id);
+
+      user.friends.push(bot._id);
+      bot.friends.push(user._id);
+
+      await botService.update(bot._id, bot, opt);
+    }
+
+    user = await new UserService().update(user._id, user, opt);
+    await new AuthService().sendVerificationEmail(user.email, opt);
+    await runner.commitTransaction();
     return res.status(201).json(user);
   } catch (error) {
     console.error(error);
+    await runner.abortTransaction();
+    await runner.endSession();
     next(error);
   }
 });
@@ -55,7 +84,14 @@ router.post(
       const userService = new UserService();
       const friend = await userService.getById(req.body.id, true, opt.session);
 
-      if (!friend) throw new Error("No user with given id found");
+      if (!friend) {
+        const bot = await new BotService().getById(
+          req.body.id,
+          true,
+          opt.sesssion
+        );
+        if (bot) throw new Error("Cannot unfriend chatbot :c");
+      }
 
       user.friends = user.friends.filter(
         id => id.toString() != friend._id.toString()

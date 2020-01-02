@@ -4,6 +4,7 @@ import { Router } from "express";
 import { InvitationService } from "../service/invitationService";
 import { TransactionRunner } from "../service/transactionRunner";
 import { UserService } from "../service/userService";
+import { BotService } from "../service/botService";
 const router = Router();
 
 router.post(
@@ -45,13 +46,9 @@ router.post(
         opt
       );
 
-      const invitedUser = await userService.getById(
-        targetId,
-        true,
-        opt.session
-      );
+      let invitedUser = await userService.getById(targetId, true, opt.session);
 
-      if (!invitedUser) throw new Error("Invited user not found");
+      if (!invitedUser) throw new Error("Targeted user does't exist");
 
       //TODO: if not cast to string it will not compare well at accept invite level
       invitedUser.invitations.push(invitation._id);

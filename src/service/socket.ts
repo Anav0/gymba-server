@@ -9,7 +9,7 @@ import { TransactionRunner } from "./transactionRunner";
 import { ConversationService } from "./conversationService";
 import { UserService } from "./userService";
 import { BotService } from "./botService";
-import BotMessageInfo from "../models/socket/BotMessageInfo";
+import SocketBotMessageInfo from "../models/socket/SocketBotMessageInfo";
 console.log("Initializing sockets...");
 const io = require("socket.io")(server);
 const chat = io.of("/chat");
@@ -31,44 +31,52 @@ chat.on("connection", socket => {
   });
 
   socket.on("private message", async (data: SocketMessageInfo) => {
-    await saveMessage(data);
-  });
-
-  socket.on("bot message", async (data: BotMessageInfo) => {
-    new TransactionRunner().withTransaction(async () => {
-      try {
-        await saveMessage(data);
-
-        const botResponse = await new BotService().getBotResponse(
-          data.targetBotName,
-          data.message
-        );
-        await saveMessage({
-          message: botResponse.message,
-          conversationId: data.conversationId,
-          roomId: data.roomId,
-          userId: botResponse.bot._id
-        } as SocketMessageInfo);
-      } catch (error) {
-        chat.to(data.roomId).emit("failed to send message", {
-          error: error,
-          message: data.message
-        });
-      }
+    const runner = new TransactionRunner();
+    await runner.startSession();
+    await runner.withTransaction(async session => {
+      await saveMessage(data, session);
     });
   });
 
-  async function saveMessage(data: SocketMessageInfo) {
-    const runner = new TransactionRunner();
-    const opt = await runner.startSession();
-    try {
-      runner.startTransaction();
+  socket.on("bot message", async (data: SocketBotMessageInfo) => {
+    await new Promise(async (resolve, reject) => {
+      const runner = new TransactionRunner();
+      await runner.startSession();
+      await runner.withTransaction(async session => {
+        try {
+          await saveMessage(data, session);
 
-      const sender = await new UserService().getById(
-        data.userId,
-        false,
-        opt.session
-      );
+          const botResponse = await new BotService().getBotResponse(
+            data.botId,
+            data.message
+          );
+          await saveMessage(
+            {
+              message: botResponse.message,
+              conversationId: data.conversationId,
+              roomId: data.roomId,
+              userId: botResponse.bot._id
+            } as SocketMessageInfo,
+            session
+          );
+          resolve(botResponse);
+        } catch (error) {
+          chat.to(data.roomId).emit("failed to send message", {
+            error: error,
+            message: data.message
+          });
+          reject(error);
+        }
+      });
+    });
+  });
+
+  async function saveMessage(data: SocketMessageInfo, session?: any) {
+    try {
+      let sender = await new UserService().getById(data.userId, false, session);
+
+      if (!sender)
+        sender = await new BotService().getById(data.userId, false, session);
 
       if (!sender) throw new Error("No sender found");
 
@@ -83,15 +91,11 @@ chat.on("connection", socket => {
           status: MessageStatus.send
         } as IMessage,
         data.conversationId,
-        opt
+        { session }
       );
 
-      await runner.commitTransaction();
       chat.to(data.roomId).emit("new message", message);
     } catch (error) {
-      await runner.abortTransaction();
-      runner.endSession();
-
       let errors = [];
       if (error.message) errors.push(error.message);
       else errors.push("Sending message failed");

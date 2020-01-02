@@ -1,6 +1,6 @@
-export default class BotMessageInfo {
+export default class SocketBotMessageInfo {
   userId: string;
-  targetBotName: string;
+  botId: string,
   conversationId: string;
   message: string;
   roomId: string;

@@ -8,7 +8,6 @@ export interface IUser extends mongoose.Document {
   username: string;
   fullname: string;
   desc: string;
-  creationDate: number;
   avatarUrl: string;
   friends: string[];
   invitations: string[];
@@ -20,6 +19,7 @@ export interface IUser extends mongoose.Document {
   emailVerificationSendDate: number;
   emailVerificationToken: string;
   comparePassword: Function;
+  isBot: boolean;
 }
 const publicInfo = {
   username: {
@@ -41,50 +41,54 @@ const publicInfo = {
     maxlength: [500, "Name max length is 500"],
     trim: true
   },
-  creationDate: {
-    type: Date,
-    required: true
-  },
+
   avatarUrl: {
     type: String
   },
-  friends: [{ type: Schema.Types.ObjectId, ref: "User" }]
+  friends: [{ type: Schema.Types.ObjectId, ref: "User" }],
+  isBot: {
+    type: Boolean
+  }
 };
 
-const User = new Schema<IUser>({
-  expireAt: {
-    type: Date
+export const User = new Schema<IUser>(
+  {
+    expireAt: {
+      type: Date
+    },
+    password: {
+      type: String,
+      required: [true, "Password is required"],
+      minlength: [6, "Password needs to be at least 6 characters long"],
+      maxlength: [250, "Password max length is 250"],
+      trim: true
+    },
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      maxlength: 250,
+      trim: true,
+      unique: true,
+      match: [
+        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+        "Please enter a valid email address"
+      ]
+    },
+    isEmailVerified: {
+      type: Boolean
+    },
+
+    emailVerificationSendDate: {
+      type: Date
+    },
+    emailVerificationToken: {
+      type: String
+    },
+    conversations: [{ type: Schema.Types.ObjectId, ref: "Conversation" }],
+    invitations: [{ type: Schema.Types.ObjectId, ref: "Invitation" }]
   },
-  password: {
-    type: String,
-    required: [true, "Password is required"],
-    minlength: [6, "Password needs to be at least 6 characters long"],
-    maxlength: [250, "Password max length is 250"],
-    trim: true
-  },
-  email: {
-    type: String,
-    required: [true, "Email is required"],
-    maxlength: 250,
-    trim: true,
-    unique: true,
-    match: [
-      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-      "Please enter a valid email address"
-    ]
-  },
-  isEmailVerified: {
-    type: Boolean
-  },
-  emailVerificationSendDate: {
-    type: Date
-  },
-  emailVerificationToken: {
-    type: String
-  },
-  conversations: [{ type: Schema.Types.ObjectId, ref: "Conversation" }],
-  invitations: [{ type: Schema.Types.ObjectId, ref: "Invitation" }]
-});
+  { timestamps: { createdAt: "creationDate" } }
+);
 
 User.add(publicInfo);
 

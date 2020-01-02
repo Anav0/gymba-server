@@ -173,14 +173,17 @@ export class AuthService implements IAuthService {
         //Generate random guid
         const token = uuidv4();
         const userService = await new UserService();
-        let user = await userService.getByEmail(email);
+        let user = await userService.getByEmail(
+          email,
+          true,
+          transaction ? transaction.session : null
+        );
 
         if (!user) return reject(new Error("No user with given email found"));
 
         user.emailVerificationToken = token;
         user.emailVerificationSendDate = +Date.now();
         user.isEmailVerified = false;
-        user.creationDate = +Date.now();
         user.expireAt = moment(Date.now())
           .add(
             settings.user.validFor,
@@ -189,7 +192,7 @@ export class AuthService implements IAuthService {
           .valueOf();
 
         //Create verification link containing user id and token
-        const verificationLink = `${process.env.SERVER_URL}:${process.env.SERVER_PORT}/auth/verify/${user._id}/${token}`;
+        const verificationLink = `${process.env.CLIENT_URL}/verification/${user._id}/${token}`;
         const htmlLink = `<a href="${verificationLink}">link</a>`;
         const messageOne = "This is your email verification link:";
         const messageTwo = `it will expire in ${settings.validationEmail.validFor} ${settings.validationEmail.unit}`;

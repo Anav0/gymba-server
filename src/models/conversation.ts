@@ -2,20 +2,26 @@ import mongoose from "mongoose";
 const Schema = mongoose.Schema;
 
 export interface IConversation extends mongoose.Document {
-    roomId: string
-    participants: Array<mongoose.Schema.Types.ObjectId>
-    messages: Array<mongoose.Schema.Types.ObjectId>
+  roomId: string;
+  participants: Array<mongoose.Schema.Types.ObjectId>;
+  messages: Array<mongoose.Schema.Types.ObjectId>;
 }
 
-const Conversation = new Schema<IConversation>({
+const Conversation = new Schema<IConversation>(
+  {
     roomId: {
-        type: String,
-        required: true
+      type: String,
+      required: true
     },
     participants: {
-        type: [{ type: Schema.Types.ObjectId, ref: 'User', required: true }],
+      type: [{ type: Schema.Types.ObjectId, ref: "User", required: true }]
     },
-    messages: [{ type: Schema.Types.ObjectId, ref: 'Message' }],
-});
+    messages: [{ type: Schema.Types.ObjectId, ref: "Message" }]
+  },
+  { timestamps: { createdAt: "creationDate" } }
+);
 //TODO: add pre update hook to check if number of participants is not < 2. If so delete the conversation
-export const ConversationModel = mongoose.model<IConversation>("Conversation", Conversation);
+export const ConversationModel = mongoose.model<IConversation>(
+  "Conversation",
+  Conversation
+);

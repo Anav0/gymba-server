@@ -4,10 +4,15 @@ import { InvitationService } from "./invitationService";
 export interface IUserService {
   getListOfSuggestedFriends(user: IUser): Promise<IUser[]>;
   getById(id: string, session: any): Promise<IUser>;
-  getByEmail(email: string): Promise<IUser>;
+  getByEmail(
+    email: string,
+    getPrivateInfo: boolean,
+    session?: any
+  ): Promise<IUser>;
   getByUsername(username: string): Promise<IUser>;
-  getUsers(): Promise<IUser[]>;
-  create(model: IUser): Promise<IUser>;
+  getUsers(getPrivateInfo: boolean, session?: any): Promise<IUser[]>;
+  getUsersAndBots(getPrivateInfo: boolean, session?: any): Promise<IUser[]>;
+  create(model: IUser, transation: any): Promise<IUser>;
   update(id: string, model: IUser, transation: any): Promise<IUser>;
   remove(id: string): Promise<void>;
 }
@@ -35,14 +40,31 @@ export class UserService implements IUserService {
     });
   }
 
-  getUsers(): Promise<IUser[]> {
-    return UserModel.find({}, getUserModelPublicInfo()).exec();
+  getUsersAndBots(
+    getPrivateInfo: boolean = false,
+    session?: any
+  ): Promise<IUser[]> {
+    let query = UserModel.find({});
+
+    if (!getPrivateInfo) query = query.select(getUserModelPublicInfo());
+    if (session) query = query.session(session);
+
+    return query.exec();
+  }
+
+  getUsers(getPrivateInfo: boolean = false, session?: any): Promise<IUser[]> {
+    let query = UserModel.find({ isBot: false });
+
+    if (!getPrivateInfo) query = query.select(getUserModelPublicInfo());
+    if (session) query = query.session(session);
+
+    return query.exec();
   }
   getByUsername(
     username: string,
     getPrivateInfo: boolean = false
   ): Promise<IUser> {
-    return UserModel.findOne({ username })
+    return UserModel.findOne({ username, isBot: false })
       .select(getPrivateInfo ? "" : getUserModelPublicInfo())
       .exec();
   }
@@ -51,25 +73,32 @@ export class UserService implements IUserService {
     getPrivateInfo: boolean = false,
     session?: any
   ): Promise<IUser> {
-    let query = UserModel.findOne({ _id: id });
+    let query = UserModel.findOne({ _id: id, isBot: false });
 
     if (!getPrivateInfo) query = query.select(getUserModelPublicInfo());
     if (session) query = query.session(session);
 
     return query.exec();
   }
-  getByEmail(email: string): Promise<IUser> {
-    return UserModel.findOne({ email })
-      .select(getUserModelPublicInfo())
-      .exec();
+  getByEmail(
+    email: string,
+    getPrivateInfo: boolean = false,
+    session?: any
+  ): Promise<IUser> {
+    let query = UserModel.findOne({ email, isBot: false });
+    if (!getPrivateInfo) query = query.select(getUserModelPublicInfo());
+    if (session) query = query.session(session);
+    return query.exec();
   }
-  async create(model: IUser): Promise<IUser> {
+  async create(model: IUser, transation: any): Promise<IUser> {
+    model.isBot = false;
     const user = new UserModel(model);
-    return user.save();
+    return user.save(transation);
   }
   update(id: string, model: IUser, transation: any): Promise<IUser> {
     return new Promise(async (resolve, reject) => {
       try {
+        model.isBot = false;
         let user = await UserModel.findById(id).exec();
         user = model;
         user.save(transation);
@@ -82,7 +111,7 @@ export class UserService implements IUserService {
   remove(id: string): Promise<void> {
     return new Promise(async (resolve, reject) => {
       try {
-        let user = await UserModel.findById(id).exec();
+        let user = await UserModel.findById({ id, isBot: false }).exec();
         user.remove();
         return resolve();
       } catch (error) {

@@ -13,7 +13,8 @@ export interface IConversationService {
   getByParticipantId(
     userId: string,
     participantId: string,
-    maxNumberOfParticipants: number
+    maxNumberOfParticipants: number,
+    populate?: string
   ): Promise<IConversation[]>;
   getMostRecentMessage(user: IUser): Promise<IMessage>;
   getUnreadMessages(loggedUserId: string, id: string): Promise<IMessage[]>;
@@ -78,17 +79,19 @@ export class ConversationService implements IConversationService {
   getByParticipantId(
     userId: string,
     participantId: string,
-    maxNumberOfParticipants: number = -1
+    minNumberOfParticipants: number = -1,
+    populate?: string
   ): Promise<IConversation[]> {
     return new Promise(async (resolve, reject) => {
       try {
         let conversations = await ConversationModel.find({
           $and: [{ participants: userId }, { participants: participantId }]
-        }).exec();
-
+        })
+          .populate(!populate ? "" : populate)
+          .exec();
         conversations = conversations.filter(
           conversation =>
-            conversation.participants.length >= maxNumberOfParticipants
+            conversation.participants.length >= minNumberOfParticipants
         );
         resolve(conversations);
       } catch (error) {

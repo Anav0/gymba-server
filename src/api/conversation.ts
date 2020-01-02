@@ -4,7 +4,7 @@ import { Router } from "express";
 import { ConversationService } from "../service/conversationService";
 const router = Router();
 
-router.get(
+router.post(
   "/",
   (req, res, next) => isLoggedIn(req, res, next),
   async (req, res, next) => {
@@ -12,7 +12,9 @@ router.get(
       const user = req.user as IUser;
       const conversations = await new ConversationService().getByParticipantId(
         user._id,
-        user._id
+        user._id,
+        -1,
+        req.body.populate
       );
       return res.status(200).send(conversations);
     } catch (error) {
