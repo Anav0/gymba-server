@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
-
+/*
+  Dodać zapis ustawień do bazy danych, zmienić zachowanie w oparciu o ustawienia
+*/
 var Schema = mongoose.Schema;
 export enum MessageStatus {
   send = "send",
@@ -38,7 +40,7 @@ const Message = new Schema<IMessage>({
   content: {
     type: String,
     required: true,
-    maxlength: [250, "Message max length exceeded"]
+    maxlength: [500, "Message max length exceeded"]
   }
 });
 
