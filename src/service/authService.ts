@@ -122,7 +122,7 @@ export class AuthService implements IAuthService {
             user._id,
             session
           );
-          if (verification)
+          if (!verification)
             return reject(new Error("Email is already verified"));
 
           if (verification.sendDate) {

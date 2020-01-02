@@ -17,9 +17,11 @@ const chat = io.of("/chat");
 chat.on("connection", socket => {
   socket.on("join", (data: SocketUserInfo) => {
     socket.join(data.roomId);
-    socket
-      .to(data.roomId)
-      .emit("user join room", `${data.user.username} join room`);
+    socket.to(data.roomId).emit("user join room", data.user.fullname);
+  });
+
+  socket.on("user left", (data: SocketUserInfo) => {
+    socket.to(data.roomId).emit("user left room", data.user.fullname);
   });
 
   socket.on("is typing", (data: SocketUserInfo) => {
@@ -48,7 +50,8 @@ chat.on("connection", socket => {
 
           const botResponse = await new BotService().getBotResponse(
             data.botId,
-            data.message
+            data.message,
+            session
           );
           await saveMessage(
             {

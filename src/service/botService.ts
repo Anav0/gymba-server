@@ -1,7 +1,5 @@
 import { IUser, UserModel, getUserModelPublicInfo } from "../models";
-import { UserService } from "./userService";
-import { ConversationService } from "./conversationService";
-import uuidv4 from "uuid";
+import axios from "axios";
 
 export class BotResponse {
   message: string;
@@ -16,7 +14,11 @@ export class BotResponse {
 export interface IBotService {
   getById(id: string, getPrivateInfo: boolean, session?: any): Promise<IUser>;
   getAll(session?: any): Promise<Array<IUser>>;
-  getBotResponse(name: string, message: string): Promise<BotResponse>;
+  getBotResponse(
+    botId: string,
+    message: string,
+    session?: any
+  ): Promise<BotResponse>;
   create(model: IUser, transation: any): Promise<IUser>;
 }
 
@@ -39,11 +41,18 @@ export class BotService implements IBotService {
     if (session) query = query.session(session);
     return query.exec();
   }
-  getBotResponse(botId: string, message: string): Promise<BotResponse> {
+  getBotResponse(
+    botId: string,
+    message: string,
+    session?: any
+  ): Promise<BotResponse> {
     return new Promise(async (resolve, reject) => {
-      const bot = await this.getById(botId);
+      const bot = await this.getById(botId, false, session);
       //TODO: temperary bot response
-      resolve(new BotResponse("Elo elo 320", bot));
+      const { data: response } = await axios.get(
+        `${process.env.BOT_URL}?message=${message}`
+      );
+      resolve(new BotResponse(response, bot));
     });
   }
   update(id: string, model: IUser, transation: any): Promise<IUser> {
