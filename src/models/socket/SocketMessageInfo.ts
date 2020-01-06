@@ -1,6 +1,6 @@
 export default class SocketMessageInfo {
-  userId: string;
-  conversationId: string;
-  message: string;
-  roomId: string;
+  readonly userId: string;
+  readonly conversationId: string;
+  readonly message: string;
+  readonly roomId: string;
 }

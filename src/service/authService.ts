@@ -1,12 +1,12 @@
-import { IUser, UserModel } from "../models";
+import { IUser } from "../models";
 import settings from "../settings";
-import EmailService from "./emailService";
 import passport from "passport";
 import { Strategy } from "passport-local";
+import EmailService from "./emailService";
 import { UserService } from "./userService";
+import { VerificationService } from "./verificationService";
 import moment from "moment";
 import uuidv4 from "uuid/v4";
-import { VerificationService } from "./verificationService";
 import { TransactionRunner } from "./transactionRunner";
 import { IVerification } from "../models/verification";
 
@@ -56,8 +56,8 @@ export interface IAuthService {
   sendVerificationEmail(email: string, transaction: any): Promise<any>;
 }
 export class loginResponse {
-  user: IUser;
-  session: any;
+  readonly user: IUser;
+  readonly session: any;
 }
 
 export class AuthService implements IAuthService {

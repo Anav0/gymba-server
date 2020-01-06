@@ -4,7 +4,6 @@ import { Router } from "express";
 import { InvitationService } from "../service/invitationService";
 import { TransactionRunner } from "../service/transactionRunner";
 import { UserService } from "../service/userService";
-import { BotService } from "../service/botService";
 const router = Router();
 
 router.post(

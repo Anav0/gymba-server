@@ -1,5 +1,5 @@
 import { isLoggedIn } from "./index";
-import { IUser, IConversation, IMessage } from "../models";
+import { IUser, IMessage } from "../models";
 import { Router } from "express";
 import { ConversationService } from "../service/conversationService";
 const router = Router();

@@ -3,13 +3,13 @@ import {
   MessageStatus,
   IMessage,
   SocketMessageInfo,
-  SocketUserInfo
+  SocketUserInfo,
+  SocketBotMessageInfo
 } from "../models";
 import { TransactionRunner } from "./transactionRunner";
 import { ConversationService } from "./conversationService";
 import { UserService } from "./userService";
 import { BotService } from "./botService";
-import SocketBotMessageInfo from "../models/socket/SocketBotMessageInfo";
 console.log("Initializing sockets...");
 const io = require("socket.io")(server);
 const chat = io.of("/chat");

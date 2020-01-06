@@ -5,8 +5,8 @@ import {
 } from "../models";
 import { UserService } from "./userService";
 import { ConversationService } from "./conversationService";
-import uuidv4 from "uuid/v4";
 import { TransactionRunner } from "./transactionRunner";
+import uuidv4 from "uuid/v4";
 export interface IInvitationService {
   createInvitation(model: IInvitation, transation: any): Promise<IInvitation>;
   acceptInvitation(invitationId: string, userId: string): Promise<void>;

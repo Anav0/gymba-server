@@ -10,14 +10,12 @@ export interface IVerification extends mongoose.Document {
 
 export const Verification = new Schema<IVerification>(
   {
-    user: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
-        unique: true
-      }
-    ],
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true
+    },
     sendDate: {
       type: Date,
       required: true

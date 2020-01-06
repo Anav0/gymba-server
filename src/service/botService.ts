@@ -2,8 +2,8 @@ import { IUser, UserModel, getUserModelPublicInfo } from "../models";
 import axios from "axios";
 
 export class BotResponse {
-  message: string;
-  bot: IUser;
+  readonly message: string;
+  readonly bot: IUser;
 
   constructor(message: string, bot: IUser) {
     this.message = message;

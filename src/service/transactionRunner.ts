@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 export class TransactionRunner {
-  session = null;
+  private session = null;
   async startSession(): Promise<any> {
     const session = await mongoose.startSession();
     this.session = session;

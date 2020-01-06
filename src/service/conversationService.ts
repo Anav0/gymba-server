@@ -1,9 +1,9 @@
 import {
   IConversation,
   IMessage,
-  MessageModel,
-  MessageStatus,
   IUser,
+  MessageStatus,
+  MessageModel,
   ConversationModel,
   getUserModelPublicInfo
 } from "../models";

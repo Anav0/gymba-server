@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 /*
   Dodać zapis ustawień do bazy danych, zmienić zachowanie w oparciu o ustawienia
 */
-var Schema = mongoose.Schema;
+const Schema = mongoose.Schema;
 export enum MessageStatus {
   send = "send",
   delivered = "delivered",

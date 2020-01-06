@@ -1,8 +1,4 @@
-import {
-  IVerification,
-  VerificationModel,
-  Verification
-} from "../models/verification";
+import { IVerification, VerificationModel } from "../models/verification";
 
 export interface IVerificationService {
   getById(id: string, session?: any): Promise<IVerification>;

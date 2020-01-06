@@ -1,7 +1,7 @@
 export default class SocketBotMessageInfo {
-  userId: string;
-  botId: string,
-  conversationId: string;
-  message: string;
-  roomId: string;
+  readonly userId: string;
+  readonly botId: string;
+  readonly conversationId: string;
+  readonly message: string;
+  readonly roomId: string;
 }
