@@ -6,10 +6,14 @@ export interface IVerification extends mongoose.Document {
   user: string;
   sendDate: number;
   token: string;
+  expireAt: number;
 }
 
 export const Verification = new Schema<IVerification>(
   {
+    expireAt: {
+      type: Date
+    },
     user: {
       type: Schema.Types.ObjectId,
       ref: "User",

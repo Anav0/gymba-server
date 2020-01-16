@@ -203,14 +203,30 @@ export class AuthService implements IAuthService {
         if (!user) return reject(new Error("No user with given email found"));
         const verificationService = new VerificationService();
 
-        await verificationService.create(
-          {
-            user: user._id,
-            token,
-            sendDate: +Date.now()
-          } as IVerification,
+        const prevVerification = await verificationService.getByUser(
+          user._id,
           transaction.session
         );
+
+        if (prevVerification) {
+          prevVerification.sendDate = +Date.now();
+          prevVerification.token = token;
+          prevVerification.expireAt = moment(Date.now())
+            .add(
+              settings.user.validFor,
+              settings.user.unit as moment.unitOfTime.Base
+            )
+            .valueOf();
+          verificationService.update(prevVerification._id, prevVerification);
+        } else
+          await verificationService.create(
+            {
+              user: user._id,
+              token,
+              sendDate: +Date.now()
+            } as IVerification,
+            transaction.session
+          );
         user.expireAt = moment(Date.now())
           .add(
             settings.user.validFor,

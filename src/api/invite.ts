@@ -145,7 +145,6 @@ router.post(
         user._id,
         req.body.populate
       );
-
       return res.status(200).json(invites);
     } catch (error) {
       console.error(error);
