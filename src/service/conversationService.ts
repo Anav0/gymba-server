@@ -19,6 +19,11 @@ export interface IConversationService {
   getMostRecentMessage(user: IUser): Promise<IMessage>;
   getUnreadMessages(loggedUserId: string, id: string): Promise<IMessage[]>;
   getMessages(id: string): Promise<Array<IMessage>>;
+  getRangeOfMessages(
+    id: string,
+    numberOfMessages: number,
+    startFrom: number
+  ): Promise<Array<IMessage>>;
   createConversation(
     model: IConversation,
     transaction: any
@@ -99,7 +104,6 @@ export class ConversationService implements IConversationService {
       }
     });
   }
-
   getMostRecentMessage(user: IUser): Promise<IMessage> {
     return new Promise(async (resolve, reject) => {
       const mostRecentMessage = await MessageModel.findOne({
@@ -135,20 +139,32 @@ export class ConversationService implements IConversationService {
       resolve(messages);
     });
   }
-  getMessagesInBetweenDates(
+  getRangeOfMessages(
     conversationId: string,
-    startDate: string,
-    endDate: string
+    numberOfMessages: number,
+    startFrom: number
   ): Promise<IMessage[]> {
-    return MessageModel.find({
-      $and: [
-        { _id: { $in: conversationId } },
-        { sendDate: { $gte: startDate, $lte: endDate } }
-      ]
-    })
-      .populate("sender", getUserModelPublicInfo())
-      .sort({ sendDate: 1 })
-      .exec();
+    return new Promise(async (resolve, reject) => {
+      try {
+        if (Number.isNaN(numberOfMessages) || Number.isNaN(startFrom)) {
+          return reject(new Error("Invalid argument. Numbers are required"));
+        }
+        const conversation = await ConversationModel.findById(conversationId);
+        if (!conversation) return reject("No conversation with given id found");
+        const messages = await MessageModel.find({
+          _id: { $in: conversation.messages }
+        })
+          .populate("sender", getUserModelPublicInfo())
+          .sort({ sendDate: -1 })
+          .skip(startFrom)
+          .limit(numberOfMessages < 0 ? 0 : numberOfMessages)
+          .exec();
+
+        resolve(messages.sort((a, b) => (a.sendDate < b.sendDate ? -1 : 1)));
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
   getMessages(conversationId: string): Promise<IMessage[]> {
     return new Promise(async (resolve, reject) => {

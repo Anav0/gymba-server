@@ -85,32 +85,25 @@ router.get(
   }
 );
 
-router.get(
+router.post(
   "/:id/messages",
   (req, res, next) => isLoggedIn(req, res, next),
   async (req, res, next) => {
-    let startDate = new Date().toString();
-    let endDate = null;
-    const conversationId = req.params.id;
-
-    if (!conversationId)
-      throw new Error("There is no conversation id provided");
-
-    if (req.body.startDate && req.body.endDate) {
-      startDate = req.body.startDate;
-      endDate = req.body.endDate;
-    }
-
     try {
+      let numberOfMessages = +req.body.numberOfMessages;
+      let startFrom = Math.abs(+req.body.startFrom);
+
+      const conversationId = req.params.id;
+
+      if (!conversationId)
+        throw new Error("There is no conversation id provided");
+
       const conversationService = new ConversationService();
-      let messages = [] as IMessage[];
-      if (endDate)
-        conversationService.getMessagesInBetweenDates(
-          conversationId,
-          startDate,
-          endDate
-        );
-      else messages = await conversationService.getMessages(conversationId);
+      const messages = await conversationService.getRangeOfMessages(
+        conversationId,
+        numberOfMessages,
+        startFrom
+      );
 
       return res.status(200).json(messages);
     } catch (error) {
