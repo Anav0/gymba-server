@@ -20,7 +20,7 @@ export interface IUserService {
 export class UserService implements IUserService {
   getListOfSuggestedFriends(user: IUser): Promise<IUser[]> {
     return new Promise(async (resolve, reject) => {
-      const invitations = await new InvitationService().getInvitationsSendOrRecivedByUser(
+      const invitations = await new InvitationService().getInvitationsSendOrReceivedByUser(
         user._id
       );
       let ids = invitations.map(invite => invite.target);

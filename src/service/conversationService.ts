@@ -52,8 +52,22 @@ export class ConversationService implements IConversationService {
     return new Promise(async (resolve, reject) => {
       const message = await MessageModel.findById(messageId).exec();
 
-      if (message.sender.toString() != senderId.toString())
-        reject("Only sender of an message can update its status");
+      const conversation = await new ConversationService().getByMessageId(
+        message._id
+      );
+
+      const participants = (conversation.participants as unknown) as IUser[];
+
+      if (
+        !participants.find((user: IUser) => {
+          return user._id.toString() == senderId;
+        })
+      )
+        return reject(
+          new Error(
+            "Only members of this conversation can update message status"
+          )
+        );
 
       message.status = status;
       await message.save();

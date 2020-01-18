@@ -3,8 +3,8 @@ const Schema = mongoose.Schema;
 
 export interface IConversation extends mongoose.Document {
   roomId: string;
-  participants: Array<mongoose.Schema.Types.ObjectId>;
-  messages: Array<mongoose.Schema.Types.ObjectId>;
+  participants: string[];
+  messages: string[];
 }
 
 const Conversation = new Schema<IConversation>(

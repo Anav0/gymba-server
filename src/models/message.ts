@@ -6,7 +6,7 @@ const Schema = mongoose.Schema;
 export enum MessageStatus {
   send = "send",
   delivered = "delivered",
-  recived = "recived"
+  received = "received"
 }
 export interface IMessage extends mongoose.Document {
   sendDate: Date;

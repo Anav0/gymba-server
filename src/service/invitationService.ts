@@ -17,7 +17,7 @@ export interface IInvitationService {
     populate?: string,
     session?: any
   ): Promise<IInvitation>;
-  getRecivedInvitations(
+  getReceivedInvitations(
     userId: string,
     populate: string
   ): Promise<IInvitation[]>;
@@ -28,8 +28,8 @@ export interface IInvitationService {
     populate?: string,
     session?: any
   ): Promise<IInvitation>;
-  getInvitationsSendOrRecivedByUser(userId: string): Promise<IInvitation[]>;
-  getInvitationSendOrRecivedByUser(
+  getInvitationsSendOrReceivedByUser(userId: string): Promise<IInvitation[]>;
+  getInvitationSendOrReceivedByUser(
     invitationId: string,
     userId: string,
     session?: any
@@ -52,12 +52,12 @@ export class InvitationService implements IInvitationService {
 
     return query.exec();
   }
-  getInvitationsSendOrRecivedByUser(userId: string): Promise<IInvitation[]> {
+  getInvitationsSendOrReceivedByUser(userId: string): Promise<IInvitation[]> {
     return InvitationModel.find({
       $or: [{ sender: userId }, { target: userId }]
     }).exec();
   }
-  getInvitationSendOrRecivedByUser(
+  getInvitationSendOrReceivedByUser(
     invitationId: string,
     userId: string,
     session?: any
@@ -171,7 +171,7 @@ export class InvitationService implements IInvitationService {
 
         if (!user) return reject(new Error("No user with given id found"));
 
-        const invitation = await this.getInvitationSendOrRecivedByUser(
+        const invitation = await this.getInvitationSendOrReceivedByUser(
           invitationId,
           userId,
           opt.session
@@ -205,7 +205,7 @@ export class InvitationService implements IInvitationService {
       }
     });
   }
-  getRecivedInvitations(
+  getReceivedInvitations(
     userId: string,
     populate: string
   ): Promise<IInvitation[]> {

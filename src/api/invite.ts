@@ -153,12 +153,12 @@ router.post(
   }
 );
 router.post(
-  "/recived",
+  "/received",
   (req, res, next) => isLoggedIn(req, res, next),
   async (req, res, next) => {
     try {
       const user = req.user as IUser;
-      const invites = await new InvitationService().getRecivedInvitations(
+      const invites = await new InvitationService().getReceivedInvitations(
         user._id,
         req.body.populate
       );
