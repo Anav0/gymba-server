@@ -10,11 +10,22 @@ import { TransactionRunner } from "./transactionRunner";
 import { ConversationService } from "./conversationService";
 import { UserService } from "./userService";
 import { BotService } from "./botService";
+import { ActivityService } from "./activityService";
 console.log("Initializing sockets...");
 const io = require("socket.io")(server);
 const chat = io.of("/chat");
+const activityService = new ActivityService();
 
 chat.on("connection", socket => {
+  const user = socket.handshake.query;
+
+  activityService.changeStatus(user._id, true);
+  chat.emit("user login", user._id);
+
+  socket.on("disconnect", () => {
+    activityService.changeStatus(user._id, false);
+    chat.emit("user logout", user._id);
+  });
   socket.on("join", (data: SocketUserInfo) => {
     socket.join(data.roomId);
     socket.to(data.roomId).emit("user join room", data.user.fullname);

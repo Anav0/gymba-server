@@ -3,10 +3,13 @@ import { Router } from "express";
 const router = Router();
 import { AuthService } from "../service/authService";
 import { UserService } from "../service/userService";
+import { ActivityService } from "../service/activityService";
+import { IUser } from "../models";
 
 router.post("/login", async (req, res, next) => {
   try {
     const response = await new AuthService().login(req, res, next);
+    //await new ActivityService().changeStatus(response.user._id, true);
     return res.status(200).send(response);
   } catch (error) {
     next(error);
@@ -18,7 +21,9 @@ router.get(
   (req, res, next) => isLoggedIn(req, res, next),
   async (req, res, next) => {
     try {
+      const user = req.user as IUser;
       await new AuthService().logout(req);
+      //await new ActivityService().changeStatus(user._id, false);
       res.status(200).send("Logout successfull");
     } catch (error) {
       next(error);

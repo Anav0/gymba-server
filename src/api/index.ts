@@ -19,11 +19,13 @@ import inviteEndpoints from "./invite";
 import conversationEndpoints from "./conversation";
 import opinionEndpoints from "./opinion";
 import messageEndpoints from "./message";
+import activityEndpoints from "./activity";
 import botEndpoints from "./bot";
 import express from "express";
 import rateLimit from "express-rate-limit";
 import { MongoDbService } from "../service/dbService";
 import { VerificationModel } from "../models/verification";
+import { ActivityModel } from "../models/activity";
 
 const dbService = new MongoDbService();
 
@@ -82,6 +84,7 @@ app.use("/conversation", conversationEndpoints);
 app.use("/opinion", opinionEndpoints);
 app.use("/message", messageEndpoints);
 app.use("/bot", botEndpoints);
+app.use("/activity", activityEndpoints);
 
 app.use((error, req, res, next) => {
   console.log(error);
@@ -97,6 +100,7 @@ try {
   ConversationModel.createCollection();
   MessageModel.createCollection();
   InvitationModel.createCollection();
+  ActivityModel.createCollection();
 } catch (error) {
   console.error(error);
 }
