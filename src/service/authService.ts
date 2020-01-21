@@ -238,20 +238,21 @@ export class AuthService implements IAuthService {
 
         //Create verification link containing user id and token
         const verificationLink = `${process.env.CLIENT_URL}/verification/${user._id}/${token}`;
-        const htmlLink = `<a href="${verificationLink}">link</a>`;
-        const messageOne = "This is your email verification link:";
-        const messageTwo = `it will expire in ${settings.validationEmail.validFor} ${settings.validationEmail.unit}`;
 
         //Send verification email
-        const response = await new EmailService().sendEmail(
+        const response = await new EmailService().sendTemplateEmail(
           email,
           process.env.MY_EMAIL,
           "Chat account verification",
-          `${messageOne} ${verificationLink} ${messageTwo}`,
-          `<p> ${messageOne} ${htmlLink} ${messageTwo} </p>`
+          "d-f39e7d29ebd04e74bff78c4e28ebdf13",
+          {
+            validationLink: verificationLink,
+            validFor: `${settings.validationEmail.validFor} ${settings.validationEmail.unit}`
+          }
         );
         return resolve(response);
       } catch (error) {
+        console.log(error);
         reject(error);
       }
     });

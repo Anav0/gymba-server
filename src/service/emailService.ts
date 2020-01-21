@@ -18,6 +18,22 @@ export default class EmailService {
       contentHTML
     );
   }
+
+  async sendTemplateEmail(
+    to: string,
+    from: string,
+    subject: string,
+    templateId: string,
+    emailData: object
+  ) {
+    return await new SendGridEmailSender().sendTemplateEmail(
+      to,
+      from,
+      subject,
+      templateId,
+      emailData
+    );
+  }
 }
 
 interface EmailSender {
@@ -34,7 +50,6 @@ class SendGridEmailSender implements EmailSender {
   constructor() {
     sender.setApiKey(process.env.SENDGRID_API_KEY);
   }
-
   sendEmail(
     to: string,
     from: string,
@@ -64,6 +79,31 @@ class SendGridEmailSender implements EmailSender {
         resolve();
       } catch (error) {
         //if (error.response.body) console.log(error.response.body);
+        reject(error);
+      }
+    });
+  }
+  sendTemplateEmail(
+    to: string,
+    from: string,
+    subject: string,
+    templateId: string,
+    emailData: object
+  ) {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const msg = {
+          to,
+          from,
+          subject,
+          templateId,
+          dynamicTemplateData: emailData
+        };
+        const response = await sender.send(msg as MailData, true);
+        resolve(response);
+      } catch (error) {
+        if (error.response.body) console.log(error.response.body);
+        console.log(error);
         reject(error);
       }
     });
