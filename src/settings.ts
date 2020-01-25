@@ -16,7 +16,7 @@ export default {
     unit: "minutes"
   },
   rateLimit: {
-    for: 15 * 60 * 1000, // 15 minutes,
+    for: 1 * 60 * 1000, // 1 minutes,
     limit: 500 // limit each IP to 100 requests per windowMs
   }
 };

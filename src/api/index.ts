@@ -69,7 +69,8 @@ app.use(bodyParser.json());
 app.use(
   rateLimit({
     windowMs: settings.rateLimit.for,
-    max: settings.rateLimit.limit
+    max: settings.rateLimit.limit,
+    message: "Too many requests per minute"
   })
 );
 
