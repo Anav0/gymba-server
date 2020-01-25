@@ -26,6 +26,11 @@ chat.on("connection", socket => {
     activityService.changeStatus(user._id, false);
     chat.emit("user logout", user._id);
   });
+
+  socket.on("friend removed", (data: SocketUserInfo) => {
+    chat.to(data.roomId).emit("friend removed", data.user._id);
+  });
+
   socket.on("join", (data: SocketUserInfo) => {
     socket.join(data.roomId);
     socket.to(data.roomId).emit("user join room", data.user.fullname);

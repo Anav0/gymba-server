@@ -95,13 +95,15 @@ export class UserService implements IUserService {
     const user = new UserModel(model);
     return user.save(transation);
   }
-  update(id: string, model: IUser, transation: any): Promise<IUser> {
+  update(id: string, model: IUser, transaction: any): Promise<IUser> {
     return new Promise(async (resolve, reject) => {
       try {
         model.isBot = false;
-        let user = await UserModel.findById(id).exec();
+        let query = UserModel.findById(id);
+        if (transaction) query = query.session(transaction.session);
+        let user = await query.exec();
         user = model;
-        user.save(transation);
+        user = await user.save(transaction);
         return resolve(user);
       } catch (error) {
         return reject(error);

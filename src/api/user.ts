@@ -77,45 +77,44 @@ router.post(
   (req, res, next) => isLoggedIn(req, res, next),
   async (req, res, next) => {
     const runner = new TransactionRunner();
-    try {
-      const opt = await runner.startSession();
-      runner.startTransaction();
-      const user = req.user as IUser;
-      const userService = new UserService();
-      const friend = await userService.getById(req.body.id, true, opt.session);
+    await runner.startSession();
+    return await runner.withTransaction(async session => {
+      try {
+        const user = req.user as IUser;
+        const userService = new UserService();
+        const friend = await userService.getById(req.body.id, true, session);
 
-      if (!friend) {
-        const bot = await new BotService().getById(
-          req.body.id,
-          true,
-          opt.sesssion
+        if (!friend) {
+          const bot = await new BotService().getById(
+            req.body.id,
+            true,
+            session
+          );
+          if (bot) throw new Error("Cannot unfriend chatbot :c");
+        }
+
+        if (!friend)
+          throw new Error(`No user with given id found: ${req.body.id}`);
+
+        user.friends = user.friends.filter(
+          id => id.toString() != friend._id.toString()
         );
-        if (bot) throw new Error("Cannot unfriend chatbot :c");
+
+        friend.friends = friend.friends.filter(
+          id => id.toString() != user._id.toString()
+        );
+
+        await userService.update(user._id, user, { session });
+        await userService.update(friend._id, friend, { session });
+
+        return res
+          .status(200)
+          .json(`${friend.fullname} is no longer your friend`);
+      } catch (error) {
+        console.error(error);
+        next(error);
       }
-
-      user.friends = user.friends.filter(
-        id => id.toString() != friend._id.toString()
-      );
-      //await user.save(opt);
-      await userService.update(user._id, user, opt);
-
-      friend.friends = friend.friends.filter(
-        id => id.toString() != user._id.toString()
-      );
-      //await friend.save(opt);
-      await userService.update(friend._id, friend, opt);
-
-      await runner.commitTransaction();
-
-      return res
-        .status(200)
-        .json(`${friend.fullname} is no longer your friend`);
-    } catch (error) {
-      console.error(error);
-      await runner.abortTransaction();
-      runner.endSession();
-      next(error);
-    }
+    });
   }
 );
 

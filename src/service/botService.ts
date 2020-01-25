@@ -28,12 +28,16 @@ export class BotService implements IBotService {
     getPrivateInfo: boolean = false,
     session?: any
   ): Promise<IUser> {
-    let query = UserModel.findOne({ _id: id, isBot: true });
+    try {
+      let query = UserModel.findOne({ _id: id, isBot: true });
 
-    if (!getPrivateInfo) query = query.select(getUserModelPublicInfo());
-    if (session) query = query.session(session);
+      if (!getPrivateInfo) query = query.select(getUserModelPublicInfo());
+      if (session) query = query.session(session);
 
-    return query.exec();
+      return query.exec();
+    } catch (error) {
+      return error;
+    }
   }
   getAll(session?: any, getPrivateInfo: boolean = false): Promise<IUser[]> {
     let query = UserModel.find({ isBot: true });
