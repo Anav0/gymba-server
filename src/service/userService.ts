@@ -95,7 +95,7 @@ export class UserService implements IUserService {
     const user = new UserModel(model);
     return user.save(transation);
   }
-  update(id: string, model: IUser, transaction: any): Promise<IUser> {
+  update(id: string, model: IUser, transaction?: any): Promise<IUser> {
     return new Promise(async (resolve, reject) => {
       try {
         model.isBot = false;

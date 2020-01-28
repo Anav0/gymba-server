@@ -10,7 +10,7 @@ COPY package*.json ./
 
 RUN npm install
 # If you are building your code for production
-# RUN npm ci --only=production
+
 
 # Bundle app source
 COPY . .
@@ -19,6 +19,7 @@ COPY . .
 RUN npm run build
 
 #there are no .env on server
+# RUN npm ci
 # COPY .env ./dist/
 
 WORKDIR ./dist

@@ -1,5 +1,4 @@
 import cors from "cors";
-import multer from "multer";
 import passport from "passport";
 import bodyParser from "body-parser";
 import {
@@ -74,7 +73,6 @@ app.use(
   })
 );
 
-app.use(multer().any());
 app.use(passport.initialize());
 app.use(passport.session());
 app.use("/user", userEndpoints);

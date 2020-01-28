@@ -15,6 +15,9 @@ export default {
     validFor: 1,
     unit: "minutes"
   },
+  avatar: {
+    maxFileSizeInBytes: 500000
+  },
   rateLimit: {
     for: 1 * 60 * 1000, // 1 minutes,
     limit: 500 // limit each IP to 100 requests per windowMs

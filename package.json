@@ -17,6 +17,7 @@
   "author": "Igor Motyka",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/storage": "^4.3.0",
     "@sendgrid/mail": "^6.5.0",
     "@types/bcryptjs": "^2.4.2",
     "@types/connect-mongo": "^3.0.0",
