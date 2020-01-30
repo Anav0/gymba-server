@@ -7,25 +7,33 @@ export interface IStorageService {
 export class StorageService implements IStorageService {
   storage: Storage;
   constructor() {
-    console.log(process.env.NODE_ENV);
-    if (process.env.NODE_ENV == "production") this.storage = new Storage();
-    else
-      this.storage = new Storage({
-        keyFilename: "./storage-access.json"
-      });
+    this.storage = new Storage({
+      keyFilename: "./storage-access.json"
+    });
   }
 
   uploadFile(multerFile: any): Promise<string> {
     return new Promise(async (resolve, reject) => {
       try {
         if (!multerFile) reject(new Error("No file provided"));
-
+        const corsConfiguration = [
+          [
+            {
+              origin: [process.env.CLIENT_URL],
+              responseHeader: ["Content-Type"],
+              method: ["GET", "POST", "HEAD", "DELETE"],
+              maxAgeSeconds: 3600
+            }
+          ]
+        ];
         const bucket = await this.storage.bucket("gymba-files");
+        bucket.setCorsConfiguration(corsConfiguration);
 
         const { filename } = multerFile;
 
         await bucket.upload(multerFile.path, {
-          gzip: true
+          gzip: true,
+          public: true
         });
 
         return resolve(`${process.env.STORAGE_URL}/gymba-files/${filename}`);
