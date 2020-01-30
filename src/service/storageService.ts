@@ -25,8 +25,7 @@ export class StorageService implements IStorageService {
         const { filename } = multerFile;
 
         await bucket.upload(multerFile.path, {
-          gzip: true,
-          public: true
+          gzip: true
         });
 
         return resolve(`${process.env.STORAGE_URL}/gymba-files/${filename}`);
