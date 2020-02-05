@@ -180,7 +180,7 @@ export class AuthService implements IAuthService {
           await verificationService.remove(verification._id, session);
 
           user.expireAt = undefined;
-          await user.save({ session });
+          await user.save();
           return resolve();
         } catch (error) {
           reject(error);

@@ -63,9 +63,9 @@ export class BotService implements IBotService {
     return new Promise(async (resolve, reject) => {
       try {
         model.isBot = true;
-        let user = await this.getById(id);
+        let user = await this.getById(id, true, transation.session);
         user = model;
-        user.save(transation);
+        user.save();
         return resolve(user);
       } catch (error) {
         return reject(error);

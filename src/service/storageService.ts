@@ -6,6 +6,7 @@ export interface IStorageService {
 
 export class StorageService implements IStorageService {
   storage: Storage;
+
   constructor() {
     this.storage = new Storage({
       keyFilename: "./storage-access.json"
@@ -42,6 +43,7 @@ export class StorageService implements IStorageService {
       }
     });
   }
+
   deleteFile(filename: string): Promise<string> {
     return new Promise(async (resolve, reject) => {
       try {

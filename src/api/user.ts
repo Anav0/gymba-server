@@ -1,4 +1,4 @@
-import { IUser } from "../models";
+import { IUser, UserModel } from "../models";
 import { isLoggedIn } from "../api";
 import { AuthService } from "../service/authService";
 import { Router } from "express";
@@ -21,7 +21,8 @@ var storage = multer.diskStorage({
     cb(null, `${uuidv4()}-${file.originalname}`);
   }
 });
-var upload = multer({ storage: storage });
+
+var upload = multer({ storage });
 
 router.get("/", async (req, res, next) => {
   try {
@@ -36,7 +37,6 @@ router.post("/", upload.any(), async (req, res, next) => {
   const opt = await runner.startSession();
   try {
     runner.startTransaction();
-    console.log(req);
     if (req.files) var file = req.files[0];
     if (file) {
       const maxFileSizeInBytes = settings.avatar.maxFileSizeInBytes;
@@ -58,7 +58,8 @@ router.post("/", upload.any(), async (req, res, next) => {
         if (err) console.error("Failed to delete this file");
       });
     }
-    let user = await new UserService().create(req.body, opt);
+    const userService = new UserService();
+    let user = await userService.create(req.body, opt);
     const botService = new BotService();
     const bots = await botService.getAll(opt.session, true);
     for (let i = 0; i < bots.length; i++) {
@@ -79,7 +80,7 @@ router.post("/", upload.any(), async (req, res, next) => {
 
       await botService.update(bot._id, bot, opt);
     }
-    user = await new UserService().update(user._id, user, opt);
+    user = await userService.update(user._id, user, opt);
     await new AuthService().sendVerificationEmail(user.email, opt);
     await runner.commitTransaction();
     return res.status(201).json(user);
