@@ -64,7 +64,9 @@ export class BotService implements IBotService {
       try {
         model.isBot = true;
         let user = await this.getById(id, true, transation.session);
-        user = model;
+        for (const property in model) {
+          user[property] = model[property];
+        }
         user.save();
         return resolve(user);
       } catch (error) {

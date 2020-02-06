@@ -99,7 +99,9 @@ export class UserService implements IUserService {
     let query = UserModel.findById(id);
     if (transaction) query = query.session(transaction.session);
     let user = await query.exec();
-    user = model;
+    for (const property in model) {
+      user[property] = model[property];
+    }
     return user.save();
   }
   remove(id: string): Promise<void> {
