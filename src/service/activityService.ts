@@ -1,8 +1,12 @@
 import { ActivityModel, IActivity } from "../models/activity";
 
 export interface IActivityService {
-  getByUserId(userId: string): Promise<IActivity>;
-  changeStatus(userId: string, isOnline: boolean): Promise<IActivity>;
+  getByUserId(userId: string, populate?: string): Promise<IActivity>;
+  changeStatus(
+    userId: string,
+    isOnline: boolean,
+    socketId: string
+  ): Promise<IActivity>;
   getActiveUsersIds(): Promise<string[]>;
 }
 
@@ -21,7 +25,11 @@ export class ActivityService implements IActivityService {
     });
   }
 
-  async changeStatus(userId: string, isOnline: boolean): Promise<IActivity> {
+  async changeStatus(
+    userId: string,
+    isOnline: boolean,
+    socketId: string
+  ): Promise<IActivity> {
     return new Promise(async (resolve, reject) => {
       try {
         const activity = await this.getByUserId(userId);
@@ -29,12 +37,14 @@ export class ActivityService implements IActivityService {
         if (!activity) {
           const activity = await this.create({
             isOnline,
-            user: userId
+            user: userId,
+            socketId
           } as IActivity);
 
           return resolve(activity);
         } else {
           activity.isOnline = isOnline;
+          activity.socketId = socketId;
           return resolve(activity.save());
         }
       } catch (error) {
@@ -43,7 +53,9 @@ export class ActivityService implements IActivityService {
     });
   }
 
-  getByUserId(userId: string): Promise<IActivity> {
-    return ActivityModel.findOne({ user: userId }).exec();
+  getByUserId(userId: string, populate?: string): Promise<IActivity> {
+    return ActivityModel.findOne({ user: userId })
+      .populate(populate ? populate : "")
+      .exec();
   }
 }
