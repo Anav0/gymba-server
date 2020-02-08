@@ -4,6 +4,7 @@ const Schema = mongoose.Schema;
 export interface IActivity extends mongoose.Document {
   user: string;
   isOnline: boolean;
+  socketId: string;
 }
 
 const Activity = new Schema<IActivity>(
@@ -16,6 +17,9 @@ const Activity = new Schema<IActivity>(
     isOnline: {
       type: Boolean,
       required: true
+    },
+    socketId: {
+      type: String
     }
   },
   { timestamps: { createdAt: "creationDate" } }
