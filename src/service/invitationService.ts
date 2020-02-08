@@ -9,8 +9,8 @@ import { TransactionRunner } from "./transactionRunner";
 import uuidv4 from "uuid/v4";
 export interface IInvitationService {
   createInvitation(model: IInvitation, transation: any): Promise<IInvitation>;
-  acceptInvitation(invitationId: string, userId: string): Promise<void>;
-  rejectInvitation(invitationId: string, userId: string): Promise<void>;
+  acceptInvitation(invitationId: string, userId: string): Promise<IInvitation>;
+  rejectInvitation(invitationId: string, userId: string): Promise<IInvitation>;
   getById(
     invitationId: string,
     userId: string,
@@ -77,7 +77,7 @@ export class InvitationService implements IInvitationService {
     const invitation = new InvitationModel(model);
     return invitation.save(transation);
   }
-  acceptInvitation(invitationId: string, userId: string): Promise<void> {
+  acceptInvitation(invitationId: string, userId: string): Promise<IInvitation> {
     return new Promise(async (resolve, reject) => {
       const runner = new TransactionRunner();
       await runner.startSession();
@@ -149,14 +149,14 @@ export class InvitationService implements IInvitationService {
           await invitationSender.save(opt);
 
           await invitation.remove();
-          resolve();
+          resolve(invitation);
         } catch (error) {
           reject(error);
         }
       });
     });
   }
-  rejectInvitation(invitationId: string, userId: string): Promise<void> {
+  rejectInvitation(invitationId: string, userId: string): Promise<IInvitation> {
     return new Promise(async (resolve, reject) => {
       //TODO: think about making transaction middleware
       const runner = new TransactionRunner();
@@ -195,7 +195,7 @@ export class InvitationService implements IInvitationService {
         await invitation.remove();
 
         await runner.commitTransaction();
-        return resolve();
+        return resolve(invitation);
         //TODO: thing about i18n, maybe passing lang param will do the trick
       } catch (error) {
         console.error(error);

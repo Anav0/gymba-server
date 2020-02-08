@@ -111,8 +111,11 @@ router.post(
   async (req, res, next) => {
     try {
       const user = req.user as IUser;
-      await new InvitationService().acceptInvitation(req.body.id, user._id);
-      return res.status(200).json("Invitation accepted");
+      const invitation = await new InvitationService().acceptInvitation(
+        req.body.id,
+        user._id
+      );
+      return res.status(200).json(invitation);
     } catch (error) {
       console.error(error);
       next(error);
@@ -127,8 +130,11 @@ router.post(
     try {
       const user = req.user as IUser;
       //TODO: thing about i18n, maybe passing lang param will do the trick | maybe i18n service?
-      await new InvitationService().rejectInvitation(req.body.id, user._id);
-      return res.status(200).send("Invitation rejected successfully");
+      const invitation = await new InvitationService().rejectInvitation(
+        req.body.id,
+        user._id
+      );
+      return res.status(200).send(invitation);
     } catch (error) {
       console.error(error);
       next(error);

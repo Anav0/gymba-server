@@ -12,7 +12,7 @@ import { ConversationService } from "./conversationService";
 import { UserService } from "./userService";
 import { BotService } from "./botService";
 import { ActivityService } from "./activityService";
-import SocketNewInvitation from "../models/socket/SocketNewInvitation";
+import { InvitationService } from "./invitationService";
 console.log("Initializing sockets...");
 const io = require("socket.io")(server);
 const chat = io.of("/chat");
@@ -60,6 +60,31 @@ chat.on("connection", socket => {
 
     if (activity.isOnline && activity.socketId)
       socket.to(activity.socketId).emit("new invitation", invitation);
+  });
+
+  socket.on("invitation rejected", async (invitation: IInvitation) => {
+    console.log(invitation);
+    if (!invitation.target || !invitation.sender) return;
+
+    const activity = await new ActivityService().getByUserId(
+      invitation.sender == user._id ? invitation.target : invitation.sender,
+      "user"
+    );
+    console.log(activity);
+    if (activity.isOnline && activity.socketId)
+      socket.to(activity.socketId).emit("invitation rejected", invitation);
+  });
+
+  socket.on("invitation accepted", async (invitation: IInvitation) => {
+    console.log(invitation);
+    if (!invitation.target || !invitation.sender) return;
+
+    const activity = await new ActivityService().getByUserId(
+      invitation.sender == user._id ? invitation.target : invitation.sender,
+      "user"
+    );
+    if (activity.isOnline && activity.socketId)
+      socket.to(activity.socketId).emit("invitation accepted", invitation);
   });
 
   socket.on("private message", async (data: SocketMessageInfo) => {
