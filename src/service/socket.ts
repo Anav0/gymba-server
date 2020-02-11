@@ -12,7 +12,6 @@ import { ConversationService } from "./conversationService";
 import { UserService } from "./userService";
 import { BotService } from "./botService";
 import { ActivityService } from "./activityService";
-import { InvitationService } from "./invitationService";
 console.log("Initializing sockets...");
 const io = require("socket.io")(server);
 const chat = io.of("/chat");
@@ -20,13 +19,17 @@ const activityService = new ActivityService();
 
 chat.on("connection", socket => {
   const user = socket.handshake.query;
-
-  activityService.changeStatus(user._id, true, socket.id);
-  chat.emit("user login", user._id);
+  console.log(user);
+  if (user._id) {
+    activityService.changeStatus(user._id, true, socket.id);
+    chat.emit("user login", user._id);
+  }
 
   socket.on("disconnect", () => {
-    activityService.changeStatus(user._id, false, null);
-    chat.emit("user logout", user._id);
+    if (user._id) {
+      activityService.changeStatus(user._id, false, null);
+      chat.emit("user logout", user._id);
+    }
   });
 
   socket.on("friend removed", (data: SocketUserInfo) => {
@@ -63,20 +66,17 @@ chat.on("connection", socket => {
   });
 
   socket.on("invitation rejected", async (invitation: IInvitation) => {
-    console.log(invitation);
     if (!invitation.target || !invitation.sender) return;
 
     const activity = await new ActivityService().getByUserId(
       invitation.sender == user._id ? invitation.target : invitation.sender,
       "user"
     );
-    console.log(activity);
     if (activity.isOnline && activity.socketId)
       socket.to(activity.socketId).emit("invitation rejected", invitation);
   });
 
   socket.on("invitation accepted", async (invitation: IInvitation) => {
-    console.log(invitation);
     if (!invitation.target || !invitation.sender) return;
 
     const activity = await new ActivityService().getByUserId(

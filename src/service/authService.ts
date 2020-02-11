@@ -242,7 +242,7 @@ export class AuthService implements IAuthService {
         //Send verification email
         const response = await new EmailService().sendTemplateEmail(
           email,
-          process.env.MY_EMAIL,
+          process.env.COMPANY_EMAIL,
           "Chat account verification",
           "d-f39e7d29ebd04e74bff78c4e28ebdf13",
           {

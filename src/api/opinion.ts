@@ -8,7 +8,7 @@ router.post("/", async (req, res, next) => {
       throw new Error("No sender or content provided");
 
     await new EmailService().sendEmail(
-      process.env.MY_EMAIL,
+      process.env.COMPANY_EMAIL,
       req.body.sender,
       "Gymba opinion",
       req.body.content,
